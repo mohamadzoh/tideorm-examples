@@ -1,0 +1,123 @@
+[package]
+name = "tideorm-examples"
+version = "0.4.4"
+edition = "2024"
+authors = ["Mohamad Al Zohbie <alzoubi528@gmail.com>"]
+description = "Example applications demonstrating TideORM features"
+license = "MIT"
+repository = "https://github.com/mohamadzoh/tideorm-examples"
+homepage = "https://tideorm.com"
+keywords = ["orm", "database", "examples", "postgres", "mysql"]
+categories = ["database"]
+readme = "README.md"
+rust-version = "1.85"
+publish = false
+
+[features]
+default = ["postgres", "runtime-tokio"]
+postgres = ["tideorm/postgres"]
+mysql = ["tideorm/mysql"]
+sqlite = ["tideorm/sqlite"]
+runtime-tokio = ["tideorm/runtime-tokio", "dep:tokio"]
+runtime-async-std = ["tideorm/runtime-async-std"]
+
+[dependencies]
+# TideORM - the main ORM crate
+tideorm = { version = "0.4.5", default-features = false }
+
+# Async runtime
+tokio = { version = "1.49.0", features = ["full"], optional = true }
+async-trait = "0.1.89"
+
+# Serialization
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+
+# Types
+chrono = { version = "0.4.42", features = ["serde"] }
+uuid = { version = "1.19.0", features = ["serde", "v4"] }
+rust_decimal = { version = "1.40.0", features = ["serde"] }
+
+# Environment variables
+dotenvy = "0.15.7"
+
+# Examples as binary targets
+[[bin]]
+name = "basic"
+path = "src/bin/basic.rs"
+
+[[bin]]
+name = "query_builder"
+path = "src/bin/query_builder.rs"
+
+[[bin]]
+name = "where_and_or_demo"
+path = "src/bin/where_and_or_demo.rs"
+
+[[bin]]
+name = "upsert_demo"
+path = "src/bin/upsert_demo.rs"
+
+[[bin]]
+name = "postgres_demo"
+path = "src/bin/postgres_demo.rs"
+
+[[bin]]
+name = "postgres_complete"
+path = "src/bin/postgres_complete.rs"
+
+[[bin]]
+name = "mysql_demo"
+path = "src/bin/mysql_demo.rs"
+
+[[bin]]
+name = "sqlite_demo"
+path = "src/bin/sqlite_demo.rs"
+
+[[bin]]
+name = "migrations"
+path = "src/bin/migrations.rs"
+
+[[bin]]
+name = "migration_test_runner"
+path = "src/bin/migration_test_runner.rs"
+
+[[bin]]
+name = "schema_file_demo"
+path = "src/bin/schema_file_demo.rs"
+
+[[bin]]
+name = "seeding_demo"
+path = "src/bin/seeding_demo.rs"
+
+[[bin]]
+name = "validation_demo"
+path = "src/bin/validation_demo.rs"
+
+[[bin]]
+name = "caching_demo"
+path = "src/bin/caching_demo.rs"
+
+[[bin]]
+name = "fulltext_demo"
+path = "src/bin/fulltext_demo.rs"
+
+[[bin]]
+name = "tokenization_demo"
+path = "src/bin/tokenization_demo.rs"
+
+[[bin]]
+name = "attachments_translations_demo"
+path = "src/bin/attachments_translations_demo.rs"
+
+[[bin]]
+name = "attachment_url_demo"
+path = "src/bin/attachment_url_demo.rs"
+
+[[bin]]
+name = "datetime_types_demo"
+path = "src/bin/datetime_types_demo.rs"
+
+[[bin]]
+name = "seaorm2_features_demo"
+path = "src/bin/seaorm2_features_demo.rs"
