@@ -41,17 +41,17 @@ use tideorm::prelude::*;
 
 /// User model - demonstrates basic tokenization
 /// 
-/// With tokenization enabled via `#[tide(tokenize)]`, you can:
+/// With tokenization enabled via `#[tideorm(tokenize)]`, you can:
 /// - Convert user IDs to encrypted tokens: `user.tokenize()`
 /// - Decode tokens back to IDs: `User::detokenize(&token)`
 /// - Fetch records directly from tokens: `User::from_token(&token).await`
 /// - Use tokens in URLs instead of exposing database IDs
 #[tideorm::model]
-#[tide(table = "tokenization_users", hidden = "deleted_at", tokenize)]
+#[tideorm(table = "tokenization_users", hidden = "deleted_at", tokenize)]
 #[index("email")]
 #[unique_index("email")]
 pub struct User {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     
     pub email: String,
@@ -79,7 +79,7 @@ impl User {
 }
 
 // No manual Tokenizable implementation needed!
-// The `#[tide(tokenize)]` attribute automatically implements it.
+// The `#[tideorm(tokenize)]` attribute automatically implements it.
 
 // ============================================================================
 // PRODUCT MODEL - Another model for cross-model token testing
@@ -90,11 +90,11 @@ impl User {
 /// A token for a User cannot be decoded as a Product and vice versa,
 /// preventing ID enumeration attacks across different resources.
 #[tideorm::model]
-#[tide(table = "tokenization_products", tokenize)]
+#[tideorm(table = "tokenization_products", tokenize)]
 #[index("sku")]
 #[unique_index("sku")]
 pub struct Product {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     
     pub sku: String,
@@ -122,7 +122,7 @@ impl Product {
 }
 
 // No manual Tokenizable implementation needed!
-// The `#[tide(tokenize)]` attribute automatically implements it.
+// The `#[tideorm(tokenize)]` attribute automatically implements it.
 
 // ============================================================================
 // ORDER MODEL - Demonstrates tokens in relationships
@@ -133,11 +133,11 @@ impl Product {
 /// Orders reference users and products. In APIs, you can use tokens
 /// instead of raw IDs to hide the internal structure.
 #[tideorm::model]
-#[tide(table = "tokenization_orders", tokenize)]
+#[tideorm(table = "tokenization_orders", tokenize)]
 #[index("user_id")]
 #[index("status")]
 pub struct Order {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     
     pub user_id: i64,
@@ -177,7 +177,7 @@ impl Order {
 }
 
 // No manual Tokenizable implementation needed!
-// The `#[tide(tokenize)]` attribute automatically implements it.
+// The `#[tideorm(tokenize)]` attribute automatically implements it.
 
 // ============================================================================
 // DATABASE SETUP SQL

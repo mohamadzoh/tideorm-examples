@@ -61,11 +61,11 @@ use tideorm::relations::{HasOne, HasMany, BelongsTo};
 
 /// User model - demonstrates has_many and has_one relations
 #[tideorm::model]
-#[tide(table = "users", hidden = "password_hash,deleted_at", searchable = "name,email")]
+#[tideorm(table = "users", hidden = "password_hash,deleted_at", searchable = "name,email")]
 #[index("email")]
 #[unique_index("email")]
 pub struct User {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub email: String,
     pub name: String,
@@ -75,10 +75,10 @@ pub struct User {
     pub updated_at: chrono::DateTime<chrono::Utc>,
     
     // Relations defined as fields
-    #[tide(has_many = "Post", foreign_key = "user_id")]
+    #[tideorm(has_many = "Post", foreign_key = "user_id")]
     pub posts: HasMany<Post>,
     
-    #[tide(has_one = "Profile", foreign_key = "user_id")]
+    #[tideorm(has_one = "Profile", foreign_key = "user_id")]
     pub profile: HasOne<Profile>,
 }
 
@@ -100,9 +100,9 @@ impl User {
 
 /// Profile model - demonstrates belongs_to relation and JSON column
 #[tideorm::model]
-#[tide(table = "profiles")]
+#[tideorm(table = "profiles")]
 pub struct Profile {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub user_id: i64,
     pub bio: Option<String>,
@@ -113,7 +113,7 @@ pub struct Profile {
     pub updated_at: chrono::DateTime<chrono::Utc>,
     
     // BelongsTo relation
-    #[tide(belongs_to = "User", foreign_key = "user_id")]
+    #[tideorm(belongs_to = "User", foreign_key = "user_id")]
     pub user: BelongsTo<User>,
 }
 
@@ -135,11 +135,11 @@ impl Profile {
 
 /// Post model - demonstrates belongs_to, soft delete, and array columns
 #[tideorm::model]
-#[tide(table = "posts", soft_delete, hidden = "deleted_at")]
+#[tideorm(table = "posts", soft_delete, hidden = "deleted_at")]
 #[index("user_id")]
 #[index("status")]
 pub struct Post {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub user_id: i64,
     pub title: String,
@@ -156,10 +156,10 @@ pub struct Post {
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
     
     // Relations
-    #[tide(belongs_to = "User", foreign_key = "user_id")]
+    #[tideorm(belongs_to = "User", foreign_key = "user_id")]
     pub author: BelongsTo<User>,
     
-    #[tide(has_many = "Comment", foreign_key = "post_id")]
+    #[tideorm(has_many = "Comment", foreign_key = "post_id")]
     pub comments: HasMany<Comment>,
 }
 
@@ -202,11 +202,11 @@ impl Post {
 
 /// Comment model - demonstrates belongs_to with multiple relations
 #[tideorm::model]
-#[tide(table = "comments")]
+#[tideorm(table = "comments")]
 #[index("post_id")]
 #[index("user_id")]
 pub struct Comment {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub post_id: i64,
     pub user_id: i64,
@@ -214,10 +214,10 @@ pub struct Comment {
     pub created_at: chrono::DateTime<chrono::Utc>,
     
     // Relations
-    #[tide(belongs_to = "User", foreign_key = "user_id")]
+    #[tideorm(belongs_to = "User", foreign_key = "user_id")]
     pub commenter: BelongsTo<User>,
     
-    #[tide(belongs_to = "Post", foreign_key = "post_id")]
+    #[tideorm(belongs_to = "Post", foreign_key = "post_id")]
     pub post: BelongsTo<Post>,
 }
 
@@ -236,11 +236,11 @@ impl Comment {
 
 /// Product model - demonstrates callbacks and JSON queries
 #[tideorm::model]
-#[tide(table = "products")]
+#[tideorm(table = "products")]
 #[index("category")]
 #[index("active")]
 pub struct Product {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
     pub category: String,
@@ -798,7 +798,7 @@ async fn main() -> tideorm::Result<()> {
     // Note: update_all is a Model method, not query builder method
     // For bulk updates, use raw SQL or iterate
     let electronics = Product::query()
-        .where_eq("category", "electronics")
+        .where_eq("category", "Electronics")
         .get()
         .await?;
     println!("   Found {} electronics products to update", electronics.len());
@@ -851,7 +851,7 @@ async fn main() -> tideorm::Result<()> {
     println!("   when(min_price): {} products", conditional.len());
     
     // when_some for Option values
-    let category_filter: Option<&str> = Some("electronics");
+    let category_filter: Option<&str> = Some("Electronics");
     let filtered = Product::query()
         .when_some(category_filter, |q, cat| q.where_eq("category", cat))
         .get()
@@ -907,7 +907,7 @@ async fn main() -> tideorm::Result<()> {
     // Execute with params
     let affected = Database::execute_with_params(
         "UPDATE products SET stock = stock + $1 WHERE category = $2",
-        vec![10i32.into(), "electronics".into()]
+        vec![10i32.into(), "Electronics".into()]
     ).await?;
     println!("   Database::execute_with_params(): {} rows affected", affected);
 
@@ -960,7 +960,7 @@ async fn main() -> tideorm::Result<()> {
     
     // Using query builder pagination
     let electronics_page = Product::query()
-        .where_eq("category", "electronics")
+        .where_eq("category", "Electronics")
         .page(1, 10)
         .get()
         .await?;
@@ -1064,17 +1064,17 @@ async fn main() -> tideorm::Result<()> {
     // For raw queries returning non-model data, we can use sqlx directly or
     // create a simple model. Here we'll just demonstrate the API:
     let product_count_by_category: Vec<Product> = Database::raw(
-        r#"SELECT * FROM "products" WHERE category = 'electronics'"#
+        r#"SELECT * FROM "products" WHERE category = 'Electronics'"#
     ).await?;
     println!("   Electronics products (via raw): {}", product_count_by_category.len());
     
     // Simpler aggregation using our helpers
     let electronics_stats = Product::query()
-        .where_eq("category", "electronics")
+        .where_eq("category", "Electronics")
         .count()
         .await?;
     let electronics_sum = Product::query()
-        .where_eq("category", "electronics")
+        .where_eq("category", "Electronics")
         .sum("price")
         .await?;
     println!("   Electronics: {} products, total ${:.2}", electronics_stats, electronics_sum / 100.0);

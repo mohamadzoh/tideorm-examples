@@ -181,6 +181,7 @@ fn cdn_url_generator(_field_name: &str, file: &FileAttachment) -> String {
 }
 
 /// S3 URL generator with bucket
+#[allow(dead_code)]
 fn s3_url_generator(_field_name: &str, file: &FileAttachment) -> String {
     format!("https://my-bucket.s3.amazonaws.com/{}", file.key.trim_start_matches('/'))
 }

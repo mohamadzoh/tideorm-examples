@@ -31,12 +31,12 @@ use tideorm::model::IndexDefinition;
 
 /// User model with various field types
 #[tideorm::model]
-#[tide(table = "users", hidden = "password_hash")]
+#[tideorm(table = "users", hidden = "password_hash")]
 #[index("email")]
 #[index("status")]
 #[unique_index("email")]
 pub struct User {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub email: String,
     pub name: String,
@@ -48,12 +48,12 @@ pub struct User {
 
 /// Post model with soft delete
 #[tideorm::model]
-#[tide(table = "posts", soft_delete)]
+#[tideorm(table = "posts", soft_delete)]
 #[index("author_id")]
 #[index(name = "idx_posts_status_published", columns = "status,published_at")]
 #[unique_index("slug")]
 pub struct Post {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub author_id: i64,
     pub slug: String,
@@ -68,11 +68,11 @@ pub struct Post {
 
 /// Category model
 #[tideorm::model]
-#[tide(table = "categories")]
+#[tideorm(table = "categories")]
 #[index("parent_id")]
 #[unique_index("slug")]
 pub struct Category {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub parent_id: Option<i64>,
     pub name: String,

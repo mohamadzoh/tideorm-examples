@@ -24,9 +24,9 @@
 use tideorm::prelude::*;
 
 #[tideorm::model]
-#[tide(table = "users")]
+#[tideorm(table = "users")]
 pub struct User {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub email: String,
     pub name: String,
@@ -36,9 +36,9 @@ pub struct User {
 }
 
 #[tideorm::model]
-#[tide(table = "settings")]
+#[tideorm(table = "settings")]
 pub struct Setting {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub tenant_id: i64,
     pub key: String,

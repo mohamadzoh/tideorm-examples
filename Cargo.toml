@@ -14,16 +14,19 @@ rust-version = "1.85"
 publish = false
 
 [features]
-default = ["postgres", "runtime-tokio"]
+default = ["postgres", "runtime-tokio", "attachments", "translations", "fulltext"]
 postgres = ["tideorm/postgres"]
 mysql = ["tideorm/mysql"]
 sqlite = ["tideorm/sqlite"]
 runtime-tokio = ["tideorm/runtime-tokio", "dep:tokio"]
 runtime-async-std = ["tideorm/runtime-async-std"]
+attachments = ["tideorm/attachments"]
+translations = ["tideorm/translations"]
+fulltext = ["tideorm/fulltext"]
 
 [dependencies]
 # TideORM - the main ORM crate
-tideorm = { version = "0.4.5", default-features = false }
+tideorm = { version = "0.8.0", default-features = false }
 
 # Async runtime
 tokio = { version = "1.49.0", features = ["full"], optional = true }
@@ -80,7 +83,7 @@ path = "src/bin/migrations.rs"
 
 [[bin]]
 name = "migration_test_runner"
-path = "src/bin/migration_test_runner.rs"
+path = "src/bin/migration_test_runner/main.rs"
 
 [[bin]]
 name = "schema_file_demo"

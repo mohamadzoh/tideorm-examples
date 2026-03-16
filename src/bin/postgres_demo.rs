@@ -47,13 +47,13 @@ use std::collections::HashMap;
 /// - #[index("email")] - for fast lookups
 /// - #[unique_index("email")] - enforce uniqueness
 #[tideorm::model]
-#[tide(table = "users", hidden = "password,deleted_at", searchable = "name,email")]
+#[tideorm(table = "users", hidden = "password,deleted_at", searchable = "name,email")]
 #[index("email")]
 #[index("status")]
 #[unique_index("email")]
 pub struct User {
     /// Primary key
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     
     /// User's email address
@@ -118,7 +118,7 @@ impl User {
 ///
 /// Note: languages and fallback_language are inherited from global TideConfig!
 #[tideorm::model]
-#[tide(
+#[tideorm(
     table = "posts",
     soft_delete,
     hidden = "deleted_at",
@@ -131,7 +131,7 @@ impl User {
 #[unique_index("slug")]
 pub struct Post {
     /// Primary key
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     
     /// Foreign key to users table

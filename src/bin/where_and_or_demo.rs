@@ -12,9 +12,9 @@ use tideorm::prelude::*;
 // =============================================================================
 
 #[tideorm::model]
-#[tide(table = "demo_products")]
+#[tideorm(table = "demo_products")]
 pub struct Product {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
     pub category: String,
@@ -24,9 +24,9 @@ pub struct Product {
     pub rating: f64,
     pub active: bool,
     pub featured: bool,
-    #[tide(nullable)]
+    #[tideorm(nullable)]
     pub description: Option<String>,
-    #[tide(nullable)]
+    #[tideorm(nullable)]
     pub discount_percent: Option<i32>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }

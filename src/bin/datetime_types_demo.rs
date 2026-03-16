@@ -31,9 +31,9 @@ use tideorm::prelude::*;
 /// Use `DateTime<Utc>` for timestamps that should track timezone information.
 /// This maps to TIMESTAMPTZ in PostgreSQL.
 #[tideorm::model]
-#[tide(table = "sessions")]
+#[tideorm(table = "sessions")]
 pub struct Session {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub user_id: i64,
     pub token: String,
@@ -54,9 +54,9 @@ pub struct Session {
 /// Use `NaiveDate` when you only need the date without time.
 /// This maps to DATE in all databases.
 #[tideorm::model]
-#[tide(table = "events")]
+#[tideorm(table = "events")]
 pub struct Event {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
     
@@ -75,9 +75,9 @@ pub struct Event {
 /// Use `NaiveTime` when you only need time without date.
 /// This maps to TIME in PostgreSQL/MySQL.
 #[tideorm::model]
-#[tide(table = "schedules")]
+#[tideorm(table = "schedules")]
 pub struct Schedule {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
     
@@ -96,9 +96,9 @@ pub struct Schedule {
 /// Use `NaiveDateTime` when timezone is not relevant (e.g., local time logs).
 /// This maps to TIMESTAMP (without time zone) in PostgreSQL.
 #[tideorm::model]
-#[tide(table = "logs")]
+#[tideorm(table = "logs")]
 pub struct Log {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub message: String,
     pub level: String,

@@ -23,30 +23,30 @@ use tideorm::prelude::*;
 
 /// Product model for e-commerce examples
 #[tideorm::model]
-#[tide(table = "products")]
+#[tideorm(table = "products")]
 #[index("category")]
 #[index("active")]
 #[index(name = "idx_price_range", columns = "price,active")]
 pub struct Product {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
     pub category: String,
     pub price: i64,  // Price in cents
     pub stock: i32,
     pub active: bool,
-    #[tide(nullable)]
+    #[tideorm(nullable)]
     pub description: Option<String>,
 }
 
 /// CustomerOrder model with various statuses
 #[tideorm::model]
-#[tide(table = "customer_orders")]
+#[tideorm(table = "customer_orders")]
 #[index("user_id")]
 #[index("status")]
 #[unique_index("order_number")]
 pub struct CustomerOrder {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub order_number: String,
     pub user_id: i64,

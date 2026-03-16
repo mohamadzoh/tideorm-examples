@@ -24,10 +24,10 @@ use std::collections::HashMap;
 /// 
 /// Note: In a real application, use the derive macro attributes:
 /// #[derive(Model, Clone, Debug, Serialize, Deserialize)]
-/// #[tide(table = "products")]
-/// #[tide(translatable = "name,description")]
-/// #[tide(has_one_files = "thumbnail")]
-/// #[tide(has_many_files = "images,documents")]
+/// #[tideorm(table = "products")]
+/// #[tideorm(translatable = "name,description")]
+/// #[tideorm(has_one_files = "thumbnail")]
+/// #[tideorm(has_many_files = "images,documents")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Product {
     /// Primary key

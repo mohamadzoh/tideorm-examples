@@ -17,11 +17,11 @@
 use tideorm::prelude::*;
 
 #[tideorm::model]
-#[tide(table = "users")]
+#[tideorm(table = "users")]
 #[index("email")]
 #[unique_index("email")]
 pub struct User {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub email: String,
     pub name: String,
@@ -30,15 +30,15 @@ pub struct User {
 }
 
 #[tideorm::model]
-#[tide(table = "notes")]
+#[tideorm(table = "notes")]
 pub struct Note {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub title: String,
     pub content: String,
     pub user_id: i64,
     /// JSON column using SQLite JSON1 extension
-    #[tide(nullable)]
+    #[tideorm(nullable)]
     pub tags: Option<serde_json::Value>,
 }
 
@@ -190,10 +190,10 @@ async fn main() -> tideorm::Result<()> {
 
     println!("=== Aggregations ===\n");
 
-    let count = Note::query().count().await?;
+    let count = Note::query().get().await?.len();
     println!("Total notes: {}", count);
 
-    let user_count = User::query().count().await?;
+    let user_count = User::query().get().await?.len();
     println!("Total users: {}\n", user_count);
 
     // =====================
@@ -233,15 +233,15 @@ async fn main() -> tideorm::Result<()> {
 
     let exists = User::query()
         .where_eq("email", "alice@example.com")
-        .exists()
+        .first()
         .await?;
-    println!("Alice exists: {}", exists);
+    println!("Alice exists: {}", exists.is_some());
 
     let exists = User::query()
         .where_eq("email", "bob@example.com")
-        .exists()
+        .first()
         .await?;
-    println!("Bob exists: {}\n", exists);
+    println!("Bob exists: {}\n", exists.is_some());
 
     // =====================
     // First/Last Records

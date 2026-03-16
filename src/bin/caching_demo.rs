@@ -21,9 +21,9 @@ use tideorm::prelude::*;
 // =============================================================================
 
 #[tideorm::model]
-#[tide(table = "users")]
+#[tideorm(table = "users")]
 pub struct User {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub email: String,
     pub name: String,
@@ -32,9 +32,9 @@ pub struct User {
 }
 
 #[tideorm::model]
-#[tide(table = "products")]
+#[tideorm(table = "products")]
 pub struct Product {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
     pub category: String,

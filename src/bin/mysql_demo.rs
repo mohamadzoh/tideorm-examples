@@ -18,11 +18,11 @@ use std::env;
 use tideorm::prelude::*;
 
 #[tideorm::model]
-#[tide(table = "users")]
+#[tideorm(table = "users")]
 #[index("email")]
 #[unique_index("email")]
 pub struct User {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub email: String,
     pub name: String,
@@ -31,16 +31,16 @@ pub struct User {
 }
 
 #[tideorm::model]
-#[tide(table = "products")]
+#[tideorm(table = "products")]
 #[index("category")]
 pub struct Product {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
     pub category: String,
     pub price: i64,
     /// JSON column for metadata (MySQL 5.7+)
-    #[tide(nullable)]
+    #[tideorm(nullable)]
     pub metadata: Option<serde_json::Value>,
 }
 
@@ -173,7 +173,7 @@ async fn main() -> tideorm::Result<()> {
         .await?;
     }
 
-    let count = Product::query().count().await?;
+    let count = Product::query().get().await?.len();
     println!("Total products: {}", count);
 
     let avg_price = Product::query().avg("price").await?;

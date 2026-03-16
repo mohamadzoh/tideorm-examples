@@ -1,16 +1,16 @@
 use tideorm::prelude::*;
 
 #[tideorm::model]
-#[tide(table = "users")]
+#[tideorm(table = "users")]
 #[index("email")]
 #[index("active")]
 #[unique_index("email")]
 pub struct User {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub email: String,
     pub name: String,
-    #[tide(nullable)]
+    #[tideorm(nullable)]
     pub bio: Option<String>,
     pub active: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -18,11 +18,11 @@ pub struct User {
 }
 
 #[tideorm::model]
-#[tide(table = "posts")]
+#[tideorm(table = "posts")]
 #[index("user_id")]
 #[index(name = "idx_user_published", columns = "user_id,published")]
 pub struct Post {
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub user_id: i64,
     pub title: String,
@@ -119,9 +119,9 @@ fn print_api_examples() {
     println!(r#"
 // Model Definition:
 #[tideorm::model]
-#[tide(table = "users")]
+#[tideorm(table = "users")]
 pub struct User {{
-    #[tide(primary_key, auto_increment)]
+    #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub email: String,
     pub name: String,

@@ -219,19 +219,19 @@ fn demo_self_referencing_relations() {
     
     println!("Model definition:");
     println!("  #[tideorm::model]");
-    println!("  #[tide(table = \"employees\")]");
+    println!("  #[tideorm(table = \"employees\")]");
     println!("  struct Employee {{");
-    println!("      #[tide(primary_key)]");
+    println!("      #[tideorm(primary_key)]");
     println!("      id: i64,");
     println!("      name: String,");
     println!("      manager_id: Option<i64>,");
     println!("      ");
     println!("      // Parent reference (manager)");
-    println!("      #[tide(self_ref = \"id\", foreign_key = \"manager_id\")]");
+    println!("      #[tideorm(self_ref = \"id\", foreign_key = \"manager_id\")]");
     println!("      manager: SelfRef<Employee>,");
     println!("      ");
     println!("      // Children reference (direct reports)");
-    println!("      #[tide(self_ref_many = \"id\", foreign_key = \"manager_id\")]");
+    println!("      #[tideorm(self_ref_many = \"id\", foreign_key = \"manager_id\")]");
     println!("      reports: SelfRefMany<Employee>,");
     println!("  }}\n");
     
