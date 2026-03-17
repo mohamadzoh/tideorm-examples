@@ -57,8 +57,8 @@ docker run --name postgres-tideorm \
 | **upsert_demo** | Insert-or-update with conflict handling | `cargo run --bin upsert_demo` |
 | **postgres_demo** | PostgreSQL-specific features | `cargo run --bin postgres_demo` |
 | **postgres_complete** | Complete PostgreSQL showcase | `cargo run --bin postgres_complete` |
-| **mysql_demo** | MySQL/MariaDB operations | `cargo run --bin mysql_demo --features mysql --no-default-features` |
-| **sqlite_demo** | SQLite embedded database | `cargo run --bin sqlite_demo --features sqlite --no-default-features` |
+| **mysql_demo** | MySQL/MariaDB operations | `cargo run --bin mysql_demo --features "mysql runtime-tokio" --no-default-features` |
+| **sqlite_demo** | SQLite embedded database | `cargo run --bin sqlite_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **migrations** | Database schema migrations | `cargo run --bin migrations` |
 | **schema_file_demo** | SQL schema file generation | `cargo run --bin schema_file_demo` |
 | **seeding_demo** | Database seeding with factories | `cargo run --bin seeding_demo` |
