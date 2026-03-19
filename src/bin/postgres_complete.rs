@@ -40,6 +40,10 @@
 //! - JOIN operations (INNER, LEFT, RIGHT)
 //! - Aggregations (SUM, AVG, MIN, MAX, COUNT DISTINCT)
 //! - GROUP BY and HAVING clauses
+//! - Strongly-typed columns
+//! - Nested save helpers and eager loading
+//! - Linked partial select and join result consolidation
+//! - Profiling and query analysis
 //!
 //! ## Running this example
 //!
@@ -53,7 +57,41 @@
 
 use tideorm::prelude::*;
 use std::collections::HashMap;
+use std::time::Duration;
+use tideorm::columns::{Column, ColumnEq, ColumnIn, ColumnLike, ColumnOrd};
 use tideorm::relations::{HasOne, HasMany, BelongsTo};
+
+mod user_cols {
+    use super::Column;
+
+    pub const ID: Column<i64> = Column::new("id");
+    pub const EMAIL: Column<String> = Column::new("email");
+    pub const STATUS: Column<String> = Column::new("status");
+}
+
+mod product_cols {
+    use super::Column;
+
+    pub const ACTIVE: Column<bool> = Column::new("active");
+    pub const CATEGORY: Column<String> = Column::new("category");
+    pub const PRICE: Column<i64> = Column::new("price");
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+struct OrderSummary {
+    id: i64,
+    customer_name: String,
+    total: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+struct LineItemSummary {
+    id: i64,
+    order_id: i64,
+    product_name: String,
+    quantity: i32,
+    price: i64,
+}
 
 // ============================================================================
 // MODEL DEFINITIONS WITH RELATIONS
@@ -399,7 +437,7 @@ async fn main() -> tideorm::Result<()> {
     // Setup database schema
     println!("\n📋 Setting up database schema...");
     use tideorm::internal::ConnectionTrait;
-    let conn = db().__internal_connection();
+        let conn = db().__internal_connection()?;
     conn.execute_unprepared(CREATE_TABLES_SQL)
         .await
         .map_err(|e| tideorm::Error::query(e.to_string()))?;
@@ -535,6 +573,73 @@ async fn main() -> tideorm::Result<()> {
     println!("   Comment by: {:?}", commenter.map(|u| u.name));
 
     // ========================================================================
+    // 3A. NESTED SAVES & EAGER LOADING
+    // ========================================================================
+    section("3A. NESTED SAVES & EAGER LOADING");
+
+    println!("🪆 Nested save helpers...");
+    let nested_user = User::new("nested@example.com", "Nested Nancy");
+    let nested_profile = Profile::new(0);
+    let (nested_user, nested_profile) = nested_user
+        .save_with_one(nested_profile, "user_id")
+        .await?;
+    println!(
+        "   save_with_one(): user {} linked to profile user_id={}",
+        nested_user.id,
+        nested_profile.user_id
+    );
+
+    let cascade_user = User::new("cascade@example.com", "Cascade Carl");
+    let cascade_posts = vec![
+        Post::new(0, "Cascade Save One", "Saved together with the parent user"),
+        Post::new(0, "Cascade Save Two", "Also saved through save_with_many"),
+    ];
+    let (cascade_user, cascade_posts) = cascade_user
+        .save_with_many(cascade_posts, "user_id")
+        .await?;
+    println!(
+        "   save_with_many(): user {} saved {} posts",
+        cascade_user.id,
+        cascade_posts.len()
+    );
+
+    let builder_user = User::new("builder@example.com", "Builder Beth");
+    let (builder_user, related_json) = NestedSaveBuilder::new(builder_user)
+        .with_one(Profile::new(0), "user_id")
+        .with_many(
+            vec![Post::new(0, "Builder Post", "Prepared through NestedSaveBuilder")],
+            "user_id",
+        )
+        .save()
+        .await?;
+    let prepared_relations = related_json
+        .iter()
+        .filter(|json| json.get("user_id") == Some(&serde_json::json!(builder_user.id)))
+        .count();
+    println!(
+        "   NestedSaveBuilder::save(): prepared {} related payloads for user {}",
+        prepared_relations,
+        builder_user.id
+    );
+
+    println!("\n🔎 Eager loading builder...");
+    let eager_users = <User as EagerLoadExt>::with_relations(&["profile", "posts"])
+        .where_eq("status", "active")
+        .limit(3)
+        .get()
+        .await?;
+    println!("   with_relations(['profile', 'posts']): {} users", eager_users.len());
+    if let Some(first_user) = eager_users.first() {
+        let eager_posts: Option<Vec<Post>> = first_user.get_relation("posts");
+        println!(
+            "   First eager user '{}' profile_loaded={} posts_loaded={}",
+            first_user.name,
+            first_user.has_relation("profile"),
+            eager_posts.as_ref().map(|items| items.len()).unwrap_or(0)
+        );
+    }
+
+    // ========================================================================
     // 4. QUERY BUILDER
     // ========================================================================
     section("4. QUERY BUILDER");
@@ -617,6 +722,38 @@ async fn main() -> tideorm::Result<()> {
         .count()
         .await?;
     println!("   count() with where: {}", count);
+
+    // ========================================================================
+    // 4A. STRONGLY-TYPED COLUMNS
+    // ========================================================================
+    section("4A. STRONGLY-TYPED COLUMNS");
+
+    let typed_users = User::query()
+        .where_col(user_cols::STATUS.eq("active"))
+        .where_col(user_cols::EMAIL.contains("@example.com"))
+        .get()
+        .await?;
+    println!(
+        "   user_cols::STATUS.eq('active') + EMAIL.contains(): {} users",
+        typed_users.len()
+    );
+
+    let typed_selected = User::query()
+        .where_col(user_cols::ID.is_in(vec![alice.id, bob.id]))
+        .get()
+        .await?;
+    println!("   user_cols::ID.is_in([...]): {} users", typed_selected.len());
+
+    let premium_products = Product::query()
+        .where_col(product_cols::ACTIVE.eq(true))
+        .where_col(product_cols::CATEGORY.eq("Electronics"))
+        .where_col(product_cols::PRICE.gt(10_000))
+        .get()
+        .await?;
+    println!(
+        "   product_cols::PRICE.gt(10000) on active electronics: {} products",
+        premium_products.len()
+    );
 
     // ========================================================================
     // 5. JSON/JSONB OPERATIONS (PostgreSQL)
@@ -725,9 +862,8 @@ async fn main() -> tideorm::Result<()> {
     println!("   Created post: {} (id: {})", temp_post.title, temp_post.id);
     
     // Soft delete
-    let mut post_to_delete = Post::find_or_fail(temp_post.id).await?;
-    post_to_delete.deleted_at = Some(chrono::Utc::now());
-    let deleted_post = post_to_delete.update().await?;
+    let post_to_delete = Post::find_or_fail(temp_post.id).await?;
+    let deleted_post = post_to_delete.soft_delete().await?;
     println!("   Soft deleted: deleted_at = {:?}", deleted_post.deleted_at.map(|_| "set"));
     
     // Query excluding soft deleted (default behavior with SoftDelete trait)
@@ -749,9 +885,8 @@ async fn main() -> tideorm::Result<()> {
     println!("   only_trashed(): {} posts", only_trashed.len());
     
     // Restore
-    let mut post_to_restore = Post::find_or_fail(temp_post.id).await?;
-    post_to_restore.deleted_at = None;
-    let restored = post_to_restore.update().await?;
+    let post_to_restore = Post::find_or_fail(temp_post.id).await?;
+    let restored = post_to_restore.restore().await?;
     println!("   Restored: deleted_at = {:?}", restored.deleted_at);
 
     // ========================================================================
@@ -1012,6 +1147,81 @@ async fn main() -> tideorm::Result<()> {
     println!("   Multiple joins: {} posts", posts_with_all.len());
 
     // ========================================================================
+    // 15A. ADVANCED QUERY HELPERS
+    // ========================================================================
+    section("15A. ADVANCED QUERY HELPERS");
+
+    println!("🔗 Linked partial select SQL...");
+    let linked_sql = User::query()
+        .select_with_linked(
+            vec!["id", "name"],
+            "profiles",
+            "id",
+            "user_id",
+            vec!["bio", "website"],
+        )
+        .to_subquery_sql();
+    println!("   select_with_linked(): {}", preview(&linked_sql, 120));
+
+    let linked_all_sql = User::query()
+        .select_also_linked("profiles", "id", "user_id", vec!["bio"])
+        .to_subquery_sql();
+    println!("   select_also_linked(): {}", preview(&linked_all_sql, 120));
+
+    println!("\n🧩 Join result consolidation...");
+    let order1 = OrderSummary {
+        id: 1,
+        customer_name: "Alice Johnson".to_string(),
+        total: 150,
+    };
+    let order2 = OrderSummary {
+        id: 2,
+        customer_name: "Bob Smith".to_string(),
+        total: 75,
+    };
+    let flat_results = vec![
+        (
+            order1.clone(),
+            LineItemSummary {
+                id: 1,
+                order_id: 1,
+                product_name: "Keyboard".to_string(),
+                quantity: 1,
+                price: 79,
+            },
+        ),
+        (
+            order1.clone(),
+            LineItemSummary {
+                id: 2,
+                order_id: 1,
+                product_name: "Mouse".to_string(),
+                quantity: 2,
+                price: 35,
+            },
+        ),
+        (
+            order2.clone(),
+            LineItemSummary {
+                id: 3,
+                order_id: 2,
+                product_name: "Monitor".to_string(),
+                quantity: 1,
+                price: 75,
+            },
+        ),
+    ];
+    let consolidated = JoinResultConsolidator::consolidate_two(flat_results, |order| order.id);
+    println!("   consolidate_two(): {} order groups", consolidated.len());
+    if let Some((order, items)) = consolidated.first() {
+        println!(
+            "   First order '{}' consolidated into {} line items",
+            order.customer_name,
+            items.len()
+        );
+    }
+
+    // ========================================================================
     // 16. AGGREGATIONS
     // ========================================================================
     section("16. AGGREGATIONS");
@@ -1095,6 +1305,71 @@ async fn main() -> tideorm::Result<()> {
            HAVING COUNT(*) >= 1"#
     ).await?;
     println!("   Posts grouped by status: {} groups", posts_by_status.len());
+
+    // ========================================================================
+    // 16A. PROFILING & QUERY ANALYSIS
+    // ========================================================================
+    section("16A. PROFILING & QUERY ANALYSIS");
+
+    println!("⏱️  Profiling helpers...");
+    let mut profiler = Profiler::start();
+    profiler.record_full(
+        ProfiledQuery::new(
+            "SELECT id, name FROM users WHERE status = 'active'",
+            Duration::from_millis(18),
+        )
+        .with_table("users")
+        .with_rows(active_users.len() as u64),
+    );
+    profiler.record_full(
+        ProfiledQuery::new(
+            "SELECT * FROM posts WHERE user_id = 1 ORDER BY created_at DESC",
+            Duration::from_millis(132),
+        )
+        .with_table("posts")
+        .with_rows(posts.len() as u64),
+    );
+    let profile_report = profiler.stop();
+    println!(
+        "   Profiler report: {} queries, avg {:.2}ms",
+        profile_report.query_count(),
+        profile_report.avg_query_time().as_secs_f64() * 1000.0
+    );
+    println!(
+        "   Slow queries >=100ms: {}",
+        profile_report.queries_slower_than(Duration::from_millis(100)).len()
+    );
+    for suggestion in profile_report.suggestions().into_iter().take(2) {
+        println!("     - {}", suggestion);
+    }
+
+    GlobalProfiler::reset();
+    GlobalProfiler::set_slow_threshold(50);
+    GlobalProfiler::enable();
+    GlobalProfiler::record(Duration::from_millis(24));
+    GlobalProfiler::record(Duration::from_millis(62));
+    GlobalProfiler::record(Duration::from_millis(91));
+    let global_stats = GlobalProfiler::stats();
+    println!(
+        "   GlobalProfiler: total={} slow={} avg={:.2}ms",
+        global_stats.total_queries,
+        global_stats.slow_queries,
+        global_stats.avg_query_time().as_secs_f64() * 1000.0
+    );
+    GlobalProfiler::disable();
+    GlobalProfiler::reset();
+
+    let analysis_sql =
+        "SELECT * FROM users WHERE LOWER(email) LIKE '%@example.com' OR status = 'active' ORDER BY created_at";
+    let analysis = QueryAnalyzer::analyze(analysis_sql);
+    println!("   QueryAnalyzer suggestions: {}", analysis.len());
+    if let Some(first_tip) = analysis.first() {
+        println!("     {}", first_tip.title);
+    }
+    println!(
+        "   Estimated complexity: {}",
+        QueryAnalyzer::estimate_complexity(analysis_sql)
+    );
 
     // ========================================================================
     // 17. SCHEMA GENERATION
@@ -1200,7 +1475,9 @@ async fn main() -> tideorm::Result<()> {
     println!("    Configuration (TideConfig)");
     println!("    CRUD Operations");
     println!("    Relations (#[belongs_to], #[has_one], #[has_many])");
+    println!("    Nested Saves and Eager Loading");
     println!("    Query Builder (WHERE, ORDER, LIMIT, OFFSET)");
+    println!("    Strongly-Typed Columns");
     println!("    JSON/JSONB Operations");
     println!("    Array Operations");
     println!("    Soft Delete");
@@ -1212,7 +1489,9 @@ async fn main() -> tideorm::Result<()> {
     println!("    JSON Serialization");
     println!("    Pagination");
     println!("    JOIN Operations (INNER, LEFT, RIGHT)");
+    println!("    Linked Partial Select and Join Consolidation");
     println!("    Aggregations (SUM, AVG, MIN, MAX, COUNT DISTINCT)");
+    println!("    Profiling and Query Analysis");
     println!("    GROUP BY / HAVING");
     println!("    Schema Generation");    
     Ok(())
@@ -1226,4 +1505,13 @@ fn section(title: &str) {
     println!("\n══════════════════════════════════════════════════════════════");
     println!("  {}", title);
     println!("══════════════════════════════════════════════════════════════\n");
+}
+
+fn preview(value: &str, max_len: usize) -> String {
+    if value.chars().count() <= max_len {
+        value.to_string()
+    } else {
+        let prefix: String = value.chars().take(max_len.saturating_sub(3)).collect();
+        format!("{}...", prefix)
+    }
 }

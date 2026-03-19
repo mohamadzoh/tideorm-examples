@@ -268,7 +268,7 @@ async fn main() -> tideorm::Result<()> {
     println!("=== Cleanup ===\n");
 
     // Bulk delete notes
-    let deleted_notes = Note::query().delete().await?;
+    let deleted_notes = Note::query().delete_all().await?;
     println!("Deleted {} notes", deleted_notes);
 
     // Delete user

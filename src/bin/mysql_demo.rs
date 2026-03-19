@@ -215,7 +215,7 @@ async fn main() -> tideorm::Result<()> {
     println!("=== Cleanup ===\n");
 
     // Bulk delete
-    let deleted = Product::query().delete().await?;
+    let deleted = Product::query().delete_all().await?;
     println!("Deleted {} products", deleted);
 
     User::destroy(user.id).await?;

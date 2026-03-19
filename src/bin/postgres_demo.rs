@@ -471,16 +471,14 @@ async fn main() -> tideorm::Result<()> {
     println!("🗑️  Soft delete demo...");
     
     // Soft delete a post
-    let mut post4 = Post::find_or_fail(post4.id).await?;
+    let post4 = Post::find_or_fail(post4.id).await?;
     println!("   Before soft delete: is_deleted = {}", post4.is_deleted());
-    post4.soft_delete();
-    let post4 = post4.update().await?;
+    let post4 = <Post as tideorm::SoftDelete>::soft_delete(post4).await?;
     println!("   After soft delete: is_deleted = {}", post4.is_deleted());
     
     // Restore the post
-    let mut post4 = Post::find_or_fail(post4.id).await?;
-    post4.restore();
-    let post4 = post4.update().await?;
+    let post4 = Post::find_or_fail(post4.id).await?;
+    let post4 = <Post as tideorm::SoftDelete>::restore(post4).await?;
     println!("   After restore: is_deleted = {}", post4.is_deleted());
     
     println!();

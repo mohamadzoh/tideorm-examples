@@ -64,6 +64,7 @@ docker run --name postgres-tideorm \
 | **seeding_demo** | Database seeding with factories | `cargo run --bin seeding_demo` |
 | **validation_demo** | Model validation system | `cargo run --bin validation_demo` |
 | **caching_demo** | Query caching features | `cargo run --bin caching_demo` |
+| **profiling_demo** | Query profiling and optimization analysis | `cargo run --bin profiling_demo` |
 | **fulltext_demo** | Full-text search with highlighting | `cargo run --bin fulltext_demo` |
 | **tokenization_demo** | Secure record ID tokenization | `cargo run --bin tokenization_demo` |
 | **attachments_translations_demo** | File attachments & i18n | `cargo run --bin attachments_translations_demo` |
@@ -155,6 +156,14 @@ Query result caching for improved performance.
 
 ```bash
 cargo run --bin caching_demo
+```
+
+### ⏱️ Profiling
+
+Query profiling, slow-query detection, and static query analysis helpers.
+
+```bash
+cargo run --bin profiling_demo
 ```
 
 ### 🔍 Full-Text Search

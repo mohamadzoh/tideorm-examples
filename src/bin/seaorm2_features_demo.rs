@@ -7,6 +7,7 @@
 //! 3. **Self-Referencing Relations** - Hierarchical data support
 //! 4. **Join Result Consolidation** - Nest flat join results
 //! 5. **Linked Partial Select** - Select specific columns from related tables
+//! 6. **Eager Loading Builder** - Load related records in batches
 //!
 //! Run with: `cargo run --example seaorm2_features_demo`
 
@@ -339,21 +340,25 @@ fn demo_linked_partial_select() {
     
     println!("1. select_with_linked() - Choose columns from both tables:");
     println!("   User::query()");
-    println!("       .select_with_linked::<Profile>(");
-    println!("           &[\"id\", \"name\"],         // Local columns");
-    println!("           &[\"bio\", \"avatar_url\"],  // Linked columns");
-    println!("           \"user_id\"                 // Foreign key for join");
+    println!("       .select_with_linked(");
+    println!("           vec![\"id\", \"name\"],            // Local columns");
+    println!("           \"profiles\",                       // Linked table");
+    println!("           \"id\",                             // Local PK/FK side");
+    println!("           \"user_id\",                        // Remote PK/FK side");
+    println!("           vec![\"bio\", \"website\"]         // Linked columns");
     println!("       )");
-    println!("       .get::<(i64, String, String, Option<String>)>()");
+    println!("       .get_raw::<(i64, String, Option<String>, Option<String>)>()");
     println!("       .await?;\n");
-    
+
     println!("2. select_also_linked() - All local + specific linked columns:");
     println!("   User::query()");
-    println!("       .select_also_linked::<Profile>(");
-    println!("           &[\"bio\"],     // Just the linked columns you need");
-    println!("           \"user_id\"");
+    println!("       .select_also_linked(");
+    println!("           \"profiles\",                       // Linked table");
+    println!("           \"id\",                             // Local primary key");
+    println!("           \"user_id\",                        // Remote foreign key");
+    println!("           vec![\"bio\", \"website\"]");
     println!("       )");
-    println!("       .get::<(User, String)>()");
+    println!("       .get_with_extra::<(Option<String>, Option<String>)>()");
     println!("       .await?;\n");
     
     println!("Benefits:");
@@ -361,6 +366,40 @@ fn demo_linked_partial_select() {
     println!("   Auto-generates the JOIN clause");
     println!("   Type-safe column selection");
     println!("   Works with any related model");
+}
+
+// =============================================================================
+// FEATURE 6: EAGER LOADING BUILDER
+// =============================================================================
+
+fn demo_eager_loading_builder() {
+    println!("\n=== EAGER LOADING BUILDER ===\n");
+
+    println!("Eager loading avoids N+1 query patterns when traversing relations:\n");
+
+    println!("1. Start from the model:");
+    println!("   let users = User::with_relation(\"profile\")");
+    println!("       .where_eq(\"status\", \"active\")");
+    println!("       .order_by(\"created_at\", Order::Desc)");
+    println!("       .get()");
+    println!("       .await?;\n");
+
+    println!("2. Load multiple relations in one pass:");
+    println!("   let users = User::with_relations(&[\"profile\", \"posts\", \"posts.comments\"])");
+    println!("       .limit(10)");
+    println!("       .get()");
+    println!("       .await?;\n");
+
+    println!("3. Inspect loaded data via WithRelations<M>:");
+    println!("   for user in users {{");
+    println!("       println!(\"user = {{}}\", user.model.name);");
+    println!("       println!(\"loaded relations: {{:?}}\", user.relations.keys().collect::<Vec<_>>());");
+    println!("   }}\n");
+
+    println!("Benefits:");
+    println!("   Batch-loads relation graphs instead of per-row follow-up queries");
+    println!("   Supports nested relation paths like posts.comments");
+    println!("   Keeps the fluent query builder syntax for filters, sort, and pagination");
 }
 
 // =============================================================================
@@ -377,6 +416,7 @@ fn main() {
     demo_self_referencing_relations();
     demo_join_consolidation();
     demo_linked_partial_select();
+    demo_eager_loading_builder();
     
     println!("\n╔═══════════════════════════════════════════════════════════════╗");
     println!("║                     Demo Complete!                             ║");
@@ -387,5 +427,6 @@ fn main() {
     println!("║  - Self-referencing relations for hierarchical data           ║");
     println!("║  - Join result consolidation                                   ║");
     println!("║  - Linked partial select                                       ║");
+    println!("║  - Eager loading builder                                       ║");
     println!("╚═══════════════════════════════════════════════════════════════╝\n");
 }
