@@ -350,7 +350,7 @@ async fn main() -> tideorm::Result<()> {
     
     // Create tables using raw SQL (for demo purposes)
     use tideorm::internal::ConnectionTrait;
-    let conn = db().__internal_connection();
+    let conn = db().__internal_connection()?;
     conn.execute_unprepared(CREATE_TABLES_SQL).await.map_err(|e| tideorm::Error::query(e.to_string()))?;
     println!(" Tables ready!\n");
     

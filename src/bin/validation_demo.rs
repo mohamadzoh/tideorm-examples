@@ -11,7 +11,6 @@
 //! cargo run --example validation_demo
 //! ```
 
-use tideorm::prelude::*;
 use tideorm::validation::{
     ValidationRule, Validator, ValidationBuilder, ValidationErrors,
     ValidatableValue,

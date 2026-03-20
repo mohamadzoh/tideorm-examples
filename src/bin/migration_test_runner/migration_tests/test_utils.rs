@@ -7,6 +7,10 @@
 use tideorm::database::db;
 use tideorm::Database;
 
+fn internal_connection() -> Option<tideorm::internal::DatabaseConnection> {
+    db().__internal_connection().ok()
+}
+
 /// Check if a table exists in the database
 pub async fn table_exists(table_name: &str) -> bool {
     use tideorm::internal::{ConnectionTrait, Statement};
@@ -22,11 +26,14 @@ pub async fn table_exists(table_name: &str) -> bool {
         table_name
     );
     
-    let database = db();
-    let backend = database.__internal_connection().get_database_backend();
+    let Some(connection) = internal_connection() else {
+        return false;
+    };
+
+    let backend = connection.get_database_backend();
     let stmt = Statement::from_string(backend, sql);
     
-    match database.__internal_connection().query_one_raw(stmt).await {
+    match connection.query_one_raw(stmt).await {
         Ok(Some(row)) => {
             row.try_get::<bool>("", "exists").unwrap_or(false)
         }
@@ -50,11 +57,14 @@ pub async fn column_exists(table_name: &str, column_name: &str) -> bool {
         table_name, column_name
     );
     
-    let database = db();
-    let backend = database.__internal_connection().get_database_backend();
+    let Some(connection) = internal_connection() else {
+        return false;
+    };
+
+    let backend = connection.get_database_backend();
     let stmt = Statement::from_string(backend, sql);
     
-    match database.__internal_connection().query_one_raw(stmt).await {
+    match connection.query_one_raw(stmt).await {
         Ok(Some(row)) => {
             row.try_get::<bool>("", "exists").unwrap_or(false)
         }
@@ -78,11 +88,14 @@ pub async fn index_exists(index_name: &str) -> bool {
         index_name
     );
     
-    let database = db();
-    let backend = database.__internal_connection().get_database_backend();
+    let Some(connection) = internal_connection() else {
+        return false;
+    };
+
+    let backend = connection.get_database_backend();
     let stmt = Statement::from_string(backend, sql);
     
-    match database.__internal_connection().query_one_raw(stmt).await {
+    match connection.query_one_raw(stmt).await {
         Ok(Some(row)) => {
             row.try_get::<bool>("", "exists").unwrap_or(false)
         }
@@ -96,11 +109,14 @@ pub async fn get_migration_count() -> i64 {
     
     let sql = r#"SELECT COUNT(*)::bigint as cnt FROM "_migrations""#;
     
-    let database = db();
-    let backend = database.__internal_connection().get_database_backend();
+    let Some(connection) = internal_connection() else {
+        return 0;
+    };
+
+    let backend = connection.get_database_backend();
     let stmt = Statement::from_string(backend, sql.to_string());
     
-    match database.__internal_connection().query_one_raw(stmt).await {
+    match connection.query_one_raw(stmt).await {
         Ok(Some(row)) => {
             // Try different column access methods
             let result = row.try_get::<i64>("", "cnt")
@@ -119,11 +135,14 @@ pub async fn get_test_migration_count() -> i64 {
     
     let sql = r#"SELECT COUNT(*)::bigint as cnt FROM "_migrations" WHERE "version" LIKE '20260106_%'"#;
     
-    let database = db();
-    let backend = database.__internal_connection().get_database_backend();
+    let Some(connection) = internal_connection() else {
+        return 0;
+    };
+
+    let backend = connection.get_database_backend();
     let stmt = Statement::from_string(backend, sql.to_string());
     
-    match database.__internal_connection().query_one_raw(stmt).await {
+    match connection.query_one_raw(stmt).await {
         Ok(Some(row)) => {
             row.try_get::<i64>("", "cnt")
                 .or_else(|_| row.try_get_by_index::<i64>(0))
@@ -140,11 +159,14 @@ pub async fn get_applied_versions() -> Vec<String> {
     
     let sql = r#"SELECT "version" FROM "_migrations" ORDER BY "version" ASC"#;
     
-    let database = db();
-    let backend = database.__internal_connection().get_database_backend();
+    let Some(connection) = internal_connection() else {
+        return Vec::new();
+    };
+
+    let backend = connection.get_database_backend();
     let stmt = Statement::from_string(backend, sql.to_string());
     
-    match database.__internal_connection().query_all_raw(stmt).await {
+    match connection.query_all_raw(stmt).await {
         Ok(rows) => {
             rows.iter()
                 .filter_map(|row| row.try_get::<String>("", "version").ok())
@@ -160,11 +182,14 @@ pub async fn get_test_applied_versions() -> Vec<String> {
     
     let sql = r#"SELECT "version" FROM "_migrations" WHERE "version" LIKE '20260106_%' ORDER BY "version" ASC"#;
     
-    let database = db();
-    let backend = database.__internal_connection().get_database_backend();
+    let Some(connection) = internal_connection() else {
+        return Vec::new();
+    };
+
+    let backend = connection.get_database_backend();
     let stmt = Statement::from_string(backend, sql.to_string());
     
-    match database.__internal_connection().query_all_raw(stmt).await {
+    match connection.query_all_raw(stmt).await {
         Ok(rows) => {
             rows.iter()
                 .filter_map(|row| row.try_get::<String>("", "version").ok())

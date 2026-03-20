@@ -274,7 +274,7 @@ async fn main() -> tideorm::Result<()> {
     // Create tables
     println!("   📋 Setting up tables...");
     use tideorm::internal::ConnectionTrait;
-    let conn = db().__internal_connection();
+    let conn = db().__internal_connection()?;
     
     // Drop existing tables first (for clean demo runs)
     conn.execute_unprepared(DROP_TABLES_SQL)

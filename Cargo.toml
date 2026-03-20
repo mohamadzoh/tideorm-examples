@@ -26,7 +26,7 @@ fulltext = ["tideorm/fulltext"]
 
 [dependencies]
 # TideORM - the main ORM crate
-tideorm = { version = "0.8.1", default-features = false }
+tideorm = { version = "0.8.4", default-features = false }
 
 # Async runtime
 tokio = { version = "1.49.0", features = ["full"], optional = true }
@@ -64,18 +64,22 @@ path = "src/bin/upsert_demo.rs"
 [[bin]]
 name = "postgres_demo"
 path = "src/bin/postgres_demo.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "postgres_complete"
 path = "src/bin/postgres_complete.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "mysql_demo"
 path = "src/bin/mysql_demo.rs"
+required-features = ["mysql", "runtime-tokio"]
 
 [[bin]]
 name = "sqlite_demo"
 path = "src/bin/sqlite_demo.rs"
+required-features = ["sqlite", "runtime-tokio"]
 
 [[bin]]
 name = "migrations"
@@ -84,6 +88,7 @@ path = "src/bin/migrations.rs"
 [[bin]]
 name = "migration_test_runner"
 path = "src/bin/migration_test_runner/main.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "schema_file_demo"
@@ -104,18 +109,26 @@ path = "src/bin/caching_demo.rs"
 [[bin]]
 name = "fulltext_demo"
 path = "src/bin/fulltext_demo.rs"
+required-features = ["fulltext"]
+
+[[bin]]
+name = "profiling_demo"
+path = "src/bin/profiling_demo.rs"
 
 [[bin]]
 name = "tokenization_demo"
 path = "src/bin/tokenization_demo.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "attachments_translations_demo"
 path = "src/bin/attachments_translations_demo.rs"
+required-features = ["attachments", "translations"]
 
 [[bin]]
 name = "attachment_url_demo"
 path = "src/bin/attachment_url_demo.rs"
+required-features = ["attachments"]
 
 [[bin]]
 name = "datetime_types_demo"

@@ -11,7 +11,6 @@
 //! cargo run --example fulltext_demo
 //! ```
 
-use tideorm::prelude::*;
 use tideorm::fulltext::{
     FullTextConfig, FullTextIndex,
     SearchMode, SearchWeights, HighlightConfig,
