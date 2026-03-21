@@ -12,7 +12,7 @@
 //! ## Run this example
 //!
 //! ```bash
-//! cargo run --example query_builder
+//! cargo run --bin query_builder
 //! ```
 
 use tideorm::prelude::*;
@@ -22,8 +22,7 @@ use tideorm::prelude::*;
 // =============================================================================
 
 /// Product model for e-commerce examples
-#[tideorm::model]
-#[tideorm(table = "products")]
+#[tideorm::model(table = "products")]
 #[index("category")]
 #[index("active")]
 #[index(name = "idx_price_range", columns = "price,active")]
@@ -40,8 +39,7 @@ pub struct Product {
 }
 
 /// CustomerOrder model with various statuses
-#[tideorm::model]
-#[tideorm(table = "customer_orders")]
+#[tideorm::model(table = "customer_orders")]
 #[index("user_id")]
 #[index("status")]
 #[unique_index("order_number")]

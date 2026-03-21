@@ -8,7 +8,7 @@
 //! ## Run this example
 //!
 //! ```bash
-//! cargo run --example fulltext_demo
+//! cargo run --bin fulltext_demo
 //! ```
 
 use tideorm::fulltext::{
@@ -24,8 +24,7 @@ use tideorm::config::DatabaseType;
 // =============================================================================
 
 /// Article model for full-text search demonstration
-#[tideorm::model]
-#[tideorm(table = "articles")]
+#[tideorm::model(table = "articles")]
 pub struct Article {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,

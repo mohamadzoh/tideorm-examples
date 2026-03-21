@@ -18,7 +18,7 @@
 //! createdb schema_demo
 //!
 //! # Run the example
-//! cargo run --example schema_file_demo
+//! cargo run --bin schema_file_demo
 //! ```
 
 use tideorm::prelude::*;
@@ -30,8 +30,7 @@ use tideorm::model::IndexDefinition;
 // ============================================================================
 
 /// User model with various field types
-#[tideorm::model]
-#[tideorm(table = "users", hidden = "password_hash")]
+#[tideorm::model(table = "users", hidden = "password_hash")]
 #[index("email")]
 #[index("status")]
 #[unique_index("email")]
@@ -47,8 +46,7 @@ pub struct User {
 }
 
 /// Post model with soft delete
-#[tideorm::model]
-#[tideorm(table = "posts", soft_delete)]
+#[tideorm::model(table = "posts", soft_delete)]
 #[index("author_id")]
 #[index(name = "idx_posts_status_published", columns = "status,published_at")]
 #[unique_index("slug")]
@@ -67,8 +65,7 @@ pub struct Post {
 }
 
 /// Category model
-#[tideorm::model]
-#[tideorm(table = "categories")]
+#[tideorm::model(table = "categories")]
 #[index("parent_id")]
 #[unique_index("slug")]
 pub struct Category {

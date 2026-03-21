@@ -23,7 +23,7 @@
 //! createdb migration_demo
 //!
 //! # Run the example
-//! cargo run --example migrations
+//! cargo run --bin migrations
 //! ```
 
 use tideorm::prelude::*;

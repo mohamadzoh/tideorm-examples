@@ -3,7 +3,7 @@
 //! This example demonstrates all WHERE and OR query capabilities in TideORM.
 //! It creates test data, runs various query scenarios, and verifies the results.
 //!
-//! Run with: cargo run --example where_and_or_demo
+//! Run with: cargo run --bin where_and_or_demo
 
 use tideorm::prelude::*;
 
@@ -11,8 +11,7 @@ use tideorm::prelude::*;
 // TEST MODEL: Product with various field types for comprehensive testing
 // =============================================================================
 
-#[tideorm::model]
-#[tideorm(table = "demo_products")]
+#[tideorm::model(table = "demo_products")]
 pub struct Product {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,

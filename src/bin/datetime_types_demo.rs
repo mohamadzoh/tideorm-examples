@@ -17,7 +17,7 @@
 //! createdb datetime_demo
 //!
 //! # Run the example
-//! cargo run --example datetime_types_demo
+//! cargo run --bin datetime_types_demo
 //! ```
 
 use tideorm::prelude::*;
@@ -30,8 +30,7 @@ use tideorm::prelude::*;
 /// 
 /// Use `DateTime<Utc>` for timestamps that should track timezone information.
 /// This maps to TIMESTAMPTZ in PostgreSQL.
-#[tideorm::model]
-#[tideorm(table = "sessions")]
+#[tideorm::model(table = "sessions")]
 pub struct Session {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
@@ -53,8 +52,7 @@ pub struct Session {
 /// 
 /// Use `NaiveDate` when you only need the date without time.
 /// This maps to DATE in all databases.
-#[tideorm::model]
-#[tideorm(table = "events")]
+#[tideorm::model(table = "events")]
 pub struct Event {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
@@ -74,8 +72,7 @@ pub struct Event {
 /// 
 /// Use `NaiveTime` when you only need time without date.
 /// This maps to TIME in PostgreSQL/MySQL.
-#[tideorm::model]
-#[tideorm(table = "schedules")]
+#[tideorm::model(table = "schedules")]
 pub struct Schedule {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
@@ -95,8 +92,7 @@ pub struct Schedule {
 /// 
 /// Use `NaiveDateTime` when timezone is not relevant (e.g., local time logs).
 /// This maps to TIMESTAMP (without time zone) in PostgreSQL.
-#[tideorm::model]
-#[tideorm(table = "logs")]
+#[tideorm::model(table = "logs")]
 pub struct Log {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,

@@ -10,7 +10,7 @@
 //! ## Run this example
 //!
 //! ```bash
-//! cargo run --example tokenization_demo
+//! cargo run --bin tokenization_demo
 //! ```
 //!
 //! ## Features Demonstrated
@@ -31,7 +31,7 @@
 //!    ENCRYPTION_KEY=my-super-secret-encryption-key-32c
 //!    ```
 //!
-//! 2. Run: cargo run --example tokenization_demo
+//! 2. Run: cargo run --bin tokenization_demo
 
 use tideorm::prelude::*;
 
@@ -46,8 +46,7 @@ use tideorm::prelude::*;
 /// - Decode tokens back to IDs: `User::detokenize(&token)`
 /// - Fetch records directly from tokens: `User::from_token(&token).await`
 /// - Use tokens in URLs instead of exposing database IDs
-#[tideorm::model]
-#[tideorm(table = "tokenization_users", hidden = "deleted_at", tokenize)]
+#[tideorm::model(table = "tokenization_users", hidden = "deleted_at", tokenize)]
 #[index("email")]
 #[unique_index("email")]
 pub struct User {
@@ -89,8 +88,7 @@ impl User {
 /// 
 /// A token for a User cannot be decoded as a Product and vice versa,
 /// preventing ID enumeration attacks across different resources.
-#[tideorm::model]
-#[tideorm(table = "tokenization_products", tokenize)]
+#[tideorm::model(table = "tokenization_products", tokenize)]
 #[index("sku")]
 #[unique_index("sku")]
 pub struct Product {
@@ -132,8 +130,7 @@ impl Product {
 /// 
 /// Orders reference users and products. In APIs, you can use tokens
 /// instead of raw IDs to hide the internal structure.
-#[tideorm::model]
-#[tideorm(table = "tokenization_orders", tokenize)]
+#[tideorm::model(table = "tokenization_orders", tokenize)]
 #[index("user_id")]
 #[index("status")]
 pub struct Order {

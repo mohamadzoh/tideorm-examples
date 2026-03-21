@@ -11,7 +11,7 @@
 //! ## Run this example
 //!
 //! ```bash
-//! cargo run --example upsert_demo
+//! cargo run --bin upsert_demo
 //! ```
 //!
 //! ## Prerequisites
@@ -23,8 +23,7 @@
 
 use tideorm::prelude::*;
 
-#[tideorm::model]
-#[tideorm(table = "users")]
+#[tideorm::model(table = "users")]
 pub struct User {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
@@ -35,8 +34,7 @@ pub struct User {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[tideorm::model]
-#[tideorm(table = "settings")]
+#[tideorm::model(table = "settings")]
 pub struct Setting {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,

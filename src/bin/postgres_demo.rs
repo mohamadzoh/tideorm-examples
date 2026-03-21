@@ -7,7 +7,7 @@
 //! ## Run this example
 //!
 //! ```bash
-//! cargo run --example postgres_demo
+//! cargo run --bin postgres_demo
 //! ```
 //!
 //! ## Features Demonstrated
@@ -28,7 +28,7 @@
 //!    POSTGRESQL_DATABASE_URL=postgres://postgres:postgres@localhost:5432/test_tide_orm
 //!    ```
 //!
-//! 2. Run: DB_SYNC=true cargo run --example postgres_demo
+//! 2. Run: DB_SYNC=true cargo run --bin postgres_demo
 
 use tideorm::prelude::*;
 use std::collections::HashMap;
@@ -46,8 +46,7 @@ use std::collections::HashMap;
 /// Index macros (separate from #[tide]):
 /// - #[index("email")] - for fast lookups
 /// - #[unique_index("email")] - enforce uniqueness
-#[tideorm::model]
-#[tideorm(table = "users", hidden = "password,deleted_at", searchable = "name,email")]
+#[tideorm::model(table = "users", hidden = "password,deleted_at", searchable = "name,email")]
 #[index("email")]
 #[index("status")]
 #[unique_index("email")]
@@ -117,8 +116,7 @@ impl User {
 /// - #[unique_index("slug")] - unique constraint
 ///
 /// Note: languages and fallback_language are inherited from global TideConfig!
-#[tideorm::model]
-#[tideorm(
+#[tideorm::model(
     table = "posts",
     soft_delete,
     hidden = "deleted_at",

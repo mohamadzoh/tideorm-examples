@@ -11,10 +11,10 @@
 //! createdb migration_tests
 //!
 //! # Run with default database URL
-//! cargo run --example migration_test_runner
+//! cargo run --bin migration_test_runner
 //!
 //! # Or specify a custom database URL
-//! POSTGRESQL_DATABASE_URL=postgres://user:pass@localhost/migration_tests cargo run --example migration_test_runner
+//! POSTGRESQL_DATABASE_URL=postgres://user:pass@localhost/migration_tests cargo run --bin migration_test_runner
 //! ```
 //!
 //! ## Test Coverage

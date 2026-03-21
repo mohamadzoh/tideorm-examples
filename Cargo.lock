@@ -2520,6 +2520,7 @@ dependencies = [
  "chrono",
  "inherent",
  "ordered-float",
+ "rust_decimal",
  "sea-query-derive",
  "serde_json",
  "uuid",
@@ -2788,6 +2789,7 @@ dependencies = [
  "memchr",
  "once_cell",
  "percent-encoding",
+ "rust_decimal",
  "rustls",
  "serde",
  "serde_json",
@@ -2873,6 +2875,7 @@ dependencies = [
  "percent-encoding",
  "rand 0.8.5",
  "rsa",
+ "rust_decimal",
  "serde",
  "sha1",
  "sha2",
@@ -2912,6 +2915,7 @@ dependencies = [
  "memchr",
  "once_cell",
  "rand 0.8.5",
+ "rust_decimal",
  "serde",
  "serde_json",
  "sha2",
@@ -3052,9 +3056,9 @@ dependencies = [
 
 [[package]]
 name = "tideorm"
-version = "0.8.4"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c18613669cd6bb41c595b37e86eae04a06cf50069e37dd0389df0030e9b3df2"
+checksum = "72753b879a885141811276de985d5c18d6b39b0564e853fcb28d195dab3f5142"
 dependencies = [
  "argon2",
  "async-recursion",
@@ -3076,7 +3080,7 @@ dependencies = [
 
 [[package]]
 name = "tideorm-examples"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3091,9 +3095,9 @@ dependencies = [
 
 [[package]]
 name = "tideorm-macros"
-version = "0.8.4"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c2c0d87dbdb2303ebb573e4945a4f23dfa49a38d38cc8e24d5ebed5e3cd8a17"
+checksum = "567aafab831caec05ba79c805adfaa36d06d49b402e1410e3e5d2ecb592a9ebf"
 dependencies = [
  "convert_case",
  "darling 0.23.0",

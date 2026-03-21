@@ -10,6 +10,18 @@ Example applications demonstrating various [TideORM](https://github.com/mohamadz
 
 This repository contains comprehensive examples showcasing the features and capabilities of TideORM - a developer-friendly ORM for Rust with clean, expressive syntax. These examples are designed to help you learn and understand how to use TideORM effectively in your projects.
 
+These examples are aligned with TideORM 0.8.6 and use the current inline model syntax:
+
+```rust
+#[tideorm::model(table = "users")]
+pub struct User {
+  #[tideorm(primary_key, auto_increment)]
+  pub id: i64,
+  pub email: String,
+  pub name: String,
+}
+```
+
 ## Prerequisites
 
 Before running any examples, ensure you have:

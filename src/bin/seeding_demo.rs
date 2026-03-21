@@ -3,7 +3,7 @@
 //! This example demonstrates how to use TideORM's seeding system.
 //! Seeds are tracked in the database to prevent duplicate runs.
 //!
-//! Run with: `cargo run --example seeding_demo`
+//! Run with: `cargo run --bin seeding_demo`
 
 use tideorm::prelude::*;
 use tideorm::seeding::{Seed, Seeder, async_trait};

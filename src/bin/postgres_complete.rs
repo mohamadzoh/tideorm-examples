@@ -8,7 +8,7 @@
 //! ## Run this example
 //!
 //! ```bash
-//! cargo run --example postgres_complete
+//! cargo run --bin postgres_complete
 //! ```
 //!
 //! ## Features Demonstrated
@@ -52,7 +52,7 @@
 //! #    POSTGRESQL_DATABASE_URL=postgres://postgres:postgres@localhost:5432/test_tide_orm
 //!
 //! # 2. Run the example:
-//! cargo run --example postgres_complete
+//! cargo run --bin postgres_complete
 //! ```
 
 use tideorm::prelude::*;
@@ -98,8 +98,7 @@ struct LineItemSummary {
 // ============================================================================
 
 /// User model - demonstrates has_many and has_one relations
-#[tideorm::model]
-#[tideorm(table = "users", hidden = "password_hash,deleted_at", searchable = "name,email")]
+#[tideorm::model(table = "users", hidden = "password_hash,deleted_at", searchable = "name,email")]
 #[index("email")]
 #[unique_index("email")]
 pub struct User {
@@ -137,8 +136,7 @@ impl User {
 }
 
 /// Profile model - demonstrates belongs_to relation and JSON column
-#[tideorm::model]
-#[tideorm(table = "profiles")]
+#[tideorm::model(table = "profiles")]
 pub struct Profile {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
@@ -172,8 +170,7 @@ impl Profile {
 }
 
 /// Post model - demonstrates belongs_to, soft delete, and array columns
-#[tideorm::model]
-#[tideorm(table = "posts", soft_delete, hidden = "deleted_at")]
+#[tideorm::model(table = "posts", soft_delete, hidden = "deleted_at")]
 #[index("user_id")]
 #[index("status")]
 pub struct Post {
@@ -239,8 +236,7 @@ impl Post {
 }
 
 /// Comment model - demonstrates belongs_to with multiple relations
-#[tideorm::model]
-#[tideorm(table = "comments")]
+#[tideorm::model(table = "comments")]
 #[index("post_id")]
 #[index("user_id")]
 pub struct Comment {
@@ -273,8 +269,7 @@ impl Comment {
 }
 
 /// Product model - demonstrates callbacks and JSON queries
-#[tideorm::model]
-#[tideorm(table = "products")]
+#[tideorm::model(table = "products")]
 #[index("category")]
 #[index("active")]
 pub struct Product {

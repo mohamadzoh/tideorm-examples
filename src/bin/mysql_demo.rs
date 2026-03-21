@@ -11,14 +11,13 @@
 //! ## Running
 //!
 //! ```bash
-//! cargo run --example mysql_demo --features "mysql runtime-tokio" --no-default-features
+//! cargo run --bin mysql_demo --features "mysql runtime-tokio" --no-default-features
 //! ```
 
 use std::env;
 use tideorm::prelude::*;
 
-#[tideorm::model]
-#[tideorm(table = "users")]
+#[tideorm::model(table = "users")]
 #[index("email")]
 #[unique_index("email")]
 pub struct User {
@@ -30,8 +29,7 @@ pub struct User {
     pub age: Option<i32>,
 }
 
-#[tideorm::model]
-#[tideorm(table = "products")]
+#[tideorm::model(table = "products")]
 #[index("category")]
 pub struct Product {
     #[tideorm(primary_key, auto_increment)]

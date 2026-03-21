@@ -8,7 +8,7 @@
 //! - Access generated URLs in JSON output
 //! - Generate different URLs based on field name and file properties
 //!
-//! Run with: cargo run --example attachment_url_demo
+//! Run with: cargo run --bin attachment_url_demo
 
 use serde::{Deserialize, Serialize};
 

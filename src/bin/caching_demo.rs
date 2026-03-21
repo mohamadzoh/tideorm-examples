@@ -10,7 +10,7 @@
 //! export DATABASE_URL="postgres://user:pass@localhost/testdb"
 //!
 //! # Run the example
-//! cargo run --example caching_demo
+//! cargo run --bin caching_demo
 //! ```
 
 use std::time::Duration;
@@ -20,8 +20,7 @@ use tideorm::prelude::*;
 // MODEL DEFINITIONS
 // =============================================================================
 
-#[tideorm::model]
-#[tideorm(table = "users")]
+#[tideorm::model(table = "users")]
 pub struct User {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
@@ -31,8 +30,7 @@ pub struct User {
     pub active: bool,
 }
 
-#[tideorm::model]
-#[tideorm(table = "products")]
+#[tideorm::model(table = "products")]
 pub struct Product {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,

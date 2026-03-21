@@ -8,7 +8,7 @@
 //! ## Run this example
 //!
 //! ```bash
-//! cargo run --example validation_demo
+//! cargo run --bin validation_demo
 //! ```
 
 use tideorm::validation::{
@@ -24,8 +24,7 @@ use tideorm::validation::{
 /// 
 /// Note: When using the #[validate(...)] attribute, validation is automatic
 /// when calling user.validate() method.
-#[tideorm::model]
-#[tideorm(table = "users")]
+#[tideorm::model(table = "users")]
 pub struct User {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,

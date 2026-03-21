@@ -11,13 +11,12 @@
 //! ## Running
 //!
 //! ```bash
-//! cargo run --example sqlite_demo --features "sqlite runtime-tokio" --no-default-features
+//! cargo run --bin sqlite_demo --features "sqlite runtime-tokio" --no-default-features
 //! ```
 
 use tideorm::prelude::*;
 
-#[tideorm::model]
-#[tideorm(table = "users")]
+#[tideorm::model(table = "users")]
 #[index("email")]
 #[unique_index("email")]
 pub struct User {
@@ -29,8 +28,7 @@ pub struct User {
     pub age: Option<i32>,
 }
 
-#[tideorm::model]
-#[tideorm(table = "notes")]
+#[tideorm::model(table = "notes")]
 pub struct Note {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,

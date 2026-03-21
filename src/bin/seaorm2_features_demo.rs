@@ -9,7 +9,7 @@
 //! 5. **Linked Partial Select** - Select specific columns from related tables
 //! 6. **Eager Loading Builder** - Load related records in batches
 //!
-//! Run with: `cargo run --example seaorm2_features_demo`
+//! Run with: `cargo run --bin seaorm2_features_demo`
 
 use tideorm::prelude::*;
 use tideorm::columns::{ColumnEq, ColumnOrd, ColumnLike, ColumnNullable, ColumnIn};
@@ -18,7 +18,7 @@ use tideorm::columns::{ColumnEq, ColumnOrd, ColumnLike, ColumnNullable, ColumnIn
 // MODEL DEFINITIONS
 // =============================================================================
 
-// Note: These models would use #[tideorm::model] in a real application
+// Note: These models would use #[tideorm::model(table = "...")] in a real application
 // For this demo, we show the structure and intended usage
 
 
@@ -219,8 +219,7 @@ fn demo_self_referencing_relations() {
     println!("Self-referencing relationships (like org charts):\n");
     
     println!("Model definition:");
-    println!("  #[tideorm::model]");
-    println!("  #[tideorm(table = \"employees\")]");
+    println!("  #[tideorm::model(table = \"employees\")]");
     println!("  struct Employee {{");
     println!("      #[tideorm(primary_key)]");
     println!("      id: i64,");

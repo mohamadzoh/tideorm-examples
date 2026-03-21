@@ -3,7 +3,7 @@
 //! This example demonstrates how to use TideORM's file attachments
 //! and translations features together.
 //!
-//! Run with: cargo run --example attachments_translations_demo
+//! Run with: cargo run --bin attachments_translations_demo
 
 use tideorm::prelude::*;
 use std::collections::HashMap;
@@ -22,12 +22,8 @@ use std::collections::HashMap;
 /// - `translations` - JSONB column for translations
 /// - `files` - JSONB column for file attachments
 /// 
-/// Note: In a real application, use the derive macro attributes:
-/// #[derive(Model, Clone, Debug, Serialize, Deserialize)]
-/// #[tideorm(table = "products")]
-/// #[tideorm(translatable = "name,description")]
-/// #[tideorm(has_one_files = "thumbnail")]
-/// #[tideorm(has_many_files = "images,documents")]
+/// Note: In a real application, use the inline model attribute:
+/// #[tideorm::model(table = "products", translatable = "name,description", has_one_files = "thumbnail", has_many_files = "images,documents")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Product {
     /// Primary key
@@ -306,7 +302,8 @@ fn main() {
 /// To use with a real database, you would:
 /// 1. Derive the Model trait on your struct
 /// 2. Initialize the database connection
-/// 3. Use the async model methods like save(), find(), update(), etc.
+/// 3. Configure attachment base URLs if files should resolve to a CDN or custom path
+/// 4. Use the async model methods like save(), find(), update(), etc.
 #[allow(dead_code)]
 async fn async_example() -> tideorm::Result<()> {
     // Initialize database
@@ -314,13 +311,20 @@ async fn async_example() -> tideorm::Result<()> {
         .database("postgres://localhost/myapp")
         .languages(&["en", "ar", "fr"])
         .fallback_language("en")
+        .file_base_url("https://cdn.example.com/uploads")
+        .file_base_url_for("thumbnail", "https://images.example.com/products/thumbnails")
+        .file_base_url_for("documents", "https://docs.example.com/products")
         .connect()
         .await?;
     
-    // In a real app with #[tideorm::model], you would:
+    // In a real app with #[tideorm::model(table = "products", ...)], you would:
     // let mut product = Product { ... };
     // product.set_translation("name", "ar", "اسم عربي")?;
     // product.attach("thumbnail", "uploads/thumb.jpg")?;
+    // let thumb_url = Config::generate_file_url(
+    //     "thumbnail",
+    //     product.get_file("thumbnail")?.as_ref().unwrap(),
+    // );
     // let product = product.save().await?;
     // 
     // if let Some(found) = Product::find(product.id).await? {
