@@ -26,7 +26,7 @@ fulltext = ["tideorm/fulltext"]
 
 [dependencies]
 # TideORM - the main ORM crate
-tideorm = { version = "0.8.6", default-features = false }
+tideorm = { version = "0.8.7", default-features = false }
 
 # Async runtime
 tokio = { version = "1.49.0", features = ["full"], optional = true }
