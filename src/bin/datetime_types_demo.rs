@@ -189,6 +189,14 @@ impl Migration for CreateDateTimeTables {
     }
 }
 
+async fn reset_demo_schema() {
+    let _ = Database::execute(r#"DELETE FROM "_migrations" WHERE "version" = '20260115_001'"#).await;
+    let _ = Database::execute("DROP TABLE IF EXISTS logs CASCADE").await;
+    let _ = Database::execute("DROP TABLE IF EXISTS schedules CASCADE").await;
+    let _ = Database::execute("DROP TABLE IF EXISTS events CASCADE").await;
+    let _ = Database::execute("DROP TABLE IF EXISTS sessions CASCADE").await;
+}
+
 // ============================================================================
 // MAIN
 // ============================================================================
@@ -206,6 +214,10 @@ async fn main() -> tideorm::Result<()> {
         .await?;
 
     println!("Connected to database.\n");
+
+    println!("Resetting demo tables...");
+    reset_demo_schema().await;
+    println!("Demo schema reset complete.\n");
 
     // Run migrations
     println!("Running migrations...");

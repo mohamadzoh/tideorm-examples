@@ -26,7 +26,7 @@ fulltext = ["tideorm/fulltext"]
 
 [dependencies]
 # TideORM - the main ORM crate
-tideorm = { version = "0.8.7", default-features = false }
+tideorm = { version = "0.9.0", default-features = false }
 
 # Async runtime
 tokio = { version = "1.49.0", features = ["full"], optional = true }
@@ -114,6 +114,16 @@ required-features = ["fulltext"]
 [[bin]]
 name = "profiling_demo"
 path = "src/bin/profiling_demo.rs"
+
+[[bin]]
+name = "logging_callbacks_demo"
+path = "src/bin/logging_callbacks_demo.rs"
+required-features = ["sqlite", "runtime-tokio"]
+
+[[bin]]
+name = "relations_foreign_keys_demo"
+path = "src/bin/relations_foreign_keys_demo.rs"
+required-features = ["sqlite", "runtime-tokio"]
 
 [[bin]]
 name = "tokenization_demo"

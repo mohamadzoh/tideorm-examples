@@ -10,7 +10,7 @@ Example applications demonstrating various [TideORM](https://github.com/mohamadz
 
 This repository contains comprehensive examples showcasing the features and capabilities of TideORM - a developer-friendly ORM for Rust with clean, expressive syntax. These examples are designed to help you learn and understand how to use TideORM effectively in your projects.
 
-These examples are aligned with TideORM 0.8.6 and use the current inline model syntax:
+These examples are aligned with TideORM 0.9.0 and use the current inline model syntax:
 
 ```rust
 #[tideorm::model(table = "users")]
@@ -73,10 +73,12 @@ docker run --name postgres-tideorm \
 | **sqlite_demo** | SQLite embedded database | `cargo run --bin sqlite_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **migrations** | Database schema migrations | `cargo run --bin migrations` |
 | **schema_file_demo** | SQL schema file generation | `cargo run --bin schema_file_demo` |
-| **seeding_demo** | Database seeding with factories | `cargo run --bin seeding_demo` |
+
 | **validation_demo** | Model validation system | `cargo run --bin validation_demo` |
 | **caching_demo** | Query caching features | `cargo run --bin caching_demo` |
 | **profiling_demo** | Query profiling and optimization analysis | `cargo run --bin profiling_demo` |
+| **logging_callbacks_demo** | Query logging, query debug output, lifecycle callbacks, and error context | `cargo run --bin logging_callbacks_demo --features "sqlite runtime-tokio" --no-default-features` |
+| **relations_foreign_keys_demo** | Focused relations and foreign-key demo with SQLite | `cargo run --bin relations_foreign_keys_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **fulltext_demo** | Full-text search with highlighting | `cargo run --bin fulltext_demo` |
 | **tokenization_demo** | Secure record ID tokenization | `cargo run --bin tokenization_demo` |
 | **attachments_translations_demo** | File attachments & i18n | `cargo run --bin attachments_translations_demo` |
@@ -176,6 +178,22 @@ Query profiling, slow-query detection, and static query analysis helpers.
 
 ```bash
 cargo run --bin profiling_demo
+```
+
+### 🔎 Logging & Hooks
+
+Query logging, query debug output, lifecycle callbacks, and error context inspection.
+
+```bash
+cargo run --bin logging_callbacks_demo --features "sqlite runtime-tokio" --no-default-features
+```
+
+### 🔗 Relations & Foreign Keys
+
+Compact one-to-one, one-to-many, and belongs-to examples plus foreign-key constraint enforcement.
+
+```bash
+cargo run --bin relations_foreign_keys_demo --features "sqlite runtime-tokio" --no-default-features
 ```
 
 ### 🔍 Full-Text Search

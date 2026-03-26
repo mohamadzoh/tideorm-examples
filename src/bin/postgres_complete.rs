@@ -599,7 +599,7 @@ async fn main() -> tideorm::Result<()> {
     );
 
     let builder_user = User::new("builder@example.com", "Builder Beth");
-    let (builder_user, related_json) = NestedSaveBuilder::new(builder_user)
+    let (builder_user, saved_relations) = NestedSaveBuilder::new(builder_user)
         .with_one(Profile::new(0), "user_id")
         .with_many(
             vec![Post::new(0, "Builder Post", "Prepared through NestedSaveBuilder")],
@@ -607,10 +607,19 @@ async fn main() -> tideorm::Result<()> {
         )
         .save()
         .await?;
-    let prepared_relations = related_json
-        .iter()
-        .filter(|json| json.get("user_id") == Some(&serde_json::json!(builder_user.id)))
-        .count();
+    let prepared_relations = saved_relations.iter().try_fold(0usize, |count, relation| {
+        if relation.is_one() {
+            relation
+                .clone()
+                .into_one::<Profile>()
+                .map(|_| count + 1)
+        } else {
+            relation
+                .clone()
+                .into_many::<Post>()
+                .map(|posts| count + posts.len())
+        }
+    })?;
     println!(
         "   NestedSaveBuilder::save(): prepared {} related payloads for user {}",
         prepared_relations,
