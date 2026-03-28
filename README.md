@@ -59,6 +59,20 @@ docker run --name postgres-tideorm \
   -d postgres:latest
 ```
 
+### Run All Examples on Windows PowerShell
+
+To run the documented examples in sequence and stop on the first failure:
+
+```powershell
+.\run-all-examples.ps1
+```
+
+To print the commands without executing them:
+
+```powershell
+.\run-all-examples.ps1 -DryRun
+```
+
 ## Examples Overview
 
 | Example | Description | Run Command |

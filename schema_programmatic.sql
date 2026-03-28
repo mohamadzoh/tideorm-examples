@@ -1,6 +1,6 @@
 -- TideORM Generated Schema
 -- Database: Postgres
--- Generated at: 2026-03-26 15:13:39 UTC
+-- Generated at: 2026-03-28 13:18:10 UTC
 
 CREATE TABLE IF NOT EXISTS "users" (
     "id" BIGSERIAL,
