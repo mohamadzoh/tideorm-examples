@@ -30,6 +30,8 @@ Before running any examples, ensure you have:
 2. **Database** (PostgreSQL, MySQL, or SQLite depending on the example)
 3. **Environment configuration** via `.env` file
 
+> Current note: this branch depends on the sibling `../tideorm` checkout because the new `entity-manager` feature has not been published in a crates.io TideORM release yet.
+
 ### Database Setup
 
 Create a `.env` file in the repository root:
@@ -93,6 +95,7 @@ To print the commands without executing them:
 | **profiling_demo** | Query profiling and optimization analysis | `cargo run --bin profiling_demo` |
 | **logging_callbacks_demo** | Query logging, query debug output, lifecycle callbacks, and error context | `cargo run --bin logging_callbacks_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **relations_foreign_keys_demo** | Focused relations and foreign-key demo with SQLite | `cargo run --bin relations_foreign_keys_demo --features "sqlite runtime-tokio" --no-default-features` |
+| **entity_manager_demo** | Explicit persistence context, aggregate saves, and managed lifecycle operations | `cargo run --bin entity_manager_demo --features "sqlite runtime-tokio entity-manager" --no-default-features` |
 | **fulltext_demo** | Full-text search with highlighting | `cargo run --bin fulltext_demo` |
 | **tokenization_demo** | Secure record ID tokenization | `cargo run --bin tokenization_demo` |
 | **attachments_translations_demo** | File attachments & i18n | `cargo run --bin attachments_translations_demo` |
@@ -208,6 +211,16 @@ Compact one-to-one, one-to-many, and belongs-to examples plus foreign-key constr
 
 ```bash
 cargo run --bin relations_foreign_keys_demo --features "sqlite runtime-tokio" --no-default-features
+```
+
+### 🧭 Entity Manager
+
+Explicit persistence context workflows, aggregate saves across loaded relations, and managed lifecycle operations.
+
+This example currently relies on the local sibling `../tideorm` checkout until the `entity-manager` feature ships in a published TideORM release.
+
+```bash
+cargo run --bin entity_manager_demo --features "sqlite runtime-tokio entity-manager" --no-default-features
 ```
 
 ### 🔍 Full-Text Search

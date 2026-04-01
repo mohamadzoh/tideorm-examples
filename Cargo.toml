@@ -23,10 +23,12 @@ runtime-async-std = ["tideorm/runtime-async-std"]
 attachments = ["tideorm/attachments"]
 translations = ["tideorm/translations"]
 fulltext = ["tideorm/fulltext"]
+entity-manager = ["tideorm/entity-manager"]
 
 [dependencies]
 # TideORM - the main ORM crate
-tideorm = { version = "0.9.6", default-features = false }
+# Temporary until the entity-manager feature is pushed or released from the sibling TideORM repo.
+tideorm = { version = "0.9.9", default-features = false }
 
 # Async runtime
 tokio = { version = "1.49.0", features = ["full"], optional = true }
@@ -124,6 +126,11 @@ required-features = ["sqlite", "runtime-tokio"]
 name = "relations_foreign_keys_demo"
 path = "src/bin/relations_foreign_keys_demo.rs"
 required-features = ["sqlite", "runtime-tokio"]
+
+[[bin]]
+name = "entity_manager_demo"
+path = "src/bin/entity_manager_demo.rs"
+required-features = ["sqlite", "runtime-tokio", "entity-manager"]
 
 [[bin]]
 name = "tokenization_demo"

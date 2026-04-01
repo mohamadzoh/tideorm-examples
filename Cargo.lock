@@ -3055,9 +3055,7 @@ dependencies = [
 
 [[package]]
 name = "tideorm"
-version = "0.9.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d4f632eb227c7c2d18d88357bc52d32c722cc2e60601656a704d36a7b2343d1"
+version = "0.9.9"
 dependencies = [
  "arc-swap",
  "argon2",
@@ -3095,9 +3093,7 @@ dependencies = [
 
 [[package]]
 name = "tideorm-macros"
-version = "0.9.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e139494f9b61d45b62dfe91d4f81724310556b2227b64f4cb7710f737904914d"
+version = "0.9.9"
 dependencies = [
  "convert_case",
  "darling 0.23.0",

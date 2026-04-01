@@ -1,6 +1,6 @@
 -- TideORM Generated Schema
 -- Database: SQLite
--- Generated at: 2026-03-28 13:18:11 UTC
+-- Generated at: 2026-04-01 15:00:28 UTC
 
 CREATE TABLE IF NOT EXISTS "example" (
     "id" INTEGER,
