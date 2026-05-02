@@ -24,14 +24,16 @@ attachments = ["tideorm/attachments"]
 translations = ["tideorm/translations"]
 fulltext = ["tideorm/fulltext"]
 entity-manager = ["tideorm/entity-manager"]
+dirty-tracking = ["tideorm/dirty-tracking"]
+encrypted-fields = ["tideorm/encrypted-fields"]
 
 [dependencies]
 # TideORM - the main ORM crate
-# Temporary until the entity-manager feature is pushed or released from the sibling TideORM repo.
-tideorm = { version = "0.9.9", default-features = false }
-
+# This repo tracks the sibling TideORM checkout so examples can cover the latest
+# unreleased APIs before the next crates.io release is available.
+tideorm = { version = "0.9.15", default-features = false }
 # Async runtime
-tokio = { version = "1.49.0", features = ["full"], optional = true }
+tokio = { version = "1.51.0", features = ["full"], optional = true }
 async-trait = "0.1.89"
 
 # Serialization
@@ -97,12 +99,22 @@ name = "schema_file_demo"
 path = "src/bin/schema_file_demo.rs"
 
 [[bin]]
+name = "auto_model_discovery_demo"
+path = "src/bin/auto_model_discovery_demo.rs"
+required-features = ["sqlite", "runtime-tokio"]
+
+[[bin]]
 name = "seeding_demo"
 path = "src/bin/seeding_demo.rs"
 
 [[bin]]
 name = "validation_demo"
 path = "src/bin/validation_demo.rs"
+
+[[bin]]
+name = "dirty_tracking_demo"
+path = "src/bin/dirty_tracking_demo.rs"
+required-features = ["sqlite", "runtime-tokio", "dirty-tracking"]
 
 [[bin]]
 name = "caching_demo"
@@ -136,6 +148,11 @@ required-features = ["sqlite", "runtime-tokio", "entity-manager"]
 name = "tokenization_demo"
 path = "src/bin/tokenization_demo.rs"
 required-features = ["postgres", "runtime-tokio"]
+
+[[bin]]
+name = "encrypted_fields_demo"
+path = "src/bin/encrypted_fields_demo.rs"
+required-features = ["sqlite", "runtime-tokio", "encrypted-fields"]
 
 [[bin]]
 name = "attachments_translations_demo"

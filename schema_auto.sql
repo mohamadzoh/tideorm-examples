@@ -1,6 +1,6 @@
 -- TideORM Generated Schema
 -- Database: Postgres
--- Generated at: 2026-04-01 15:00:28 UTC
+-- Generated at: 2026-05-02 04:49:07 UTC
 
 CREATE TABLE IF NOT EXISTS "public"."_migrations" (
     "id" BIGSERIAL,
@@ -155,21 +155,21 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS "_migrations_version_key" ON "public"."_migrations" ("version");
 
+CREATE INDEX IF NOT EXISTS "idx_posts_metadata" ON "public"."posts" ("metadata");
 CREATE INDEX IF NOT EXISTS "idx_posts_user_id" ON "public"."posts" ("user_id");
 CREATE INDEX IF NOT EXISTS "idx_posts_status" ON "public"."posts" ("status");
-CREATE INDEX IF NOT EXISTS "idx_posts_metadata" ON "public"."posts" ("metadata");
 CREATE INDEX IF NOT EXISTS "idx_posts_tags" ON "public"."posts" ("tags");
 
-CREATE INDEX IF NOT EXISTS "idx_products_category" ON "public"."products" ("category");
 CREATE INDEX IF NOT EXISTS "idx_products_attributes" ON "public"."products" ("attributes");
+CREATE INDEX IF NOT EXISTS "idx_products_category" ON "public"."products" ("category");
 
 CREATE UNIQUE INDEX IF NOT EXISTS "profiles_user_id_key" ON "public"."profiles" ("user_id");
 
 CREATE UNIQUE INDEX IF NOT EXISTS "sessions_token_key" ON "public"."sessions" ("token");
 
-CREATE INDEX IF NOT EXISTS "idx_tokenization_orders_status" ON "public"."tokenization_orders" ("status");
 CREATE INDEX IF NOT EXISTS "idx_tokenization_orders_user_id" ON "public"."tokenization_orders" ("user_id");
 CREATE INDEX IF NOT EXISTS "idx_tokenization_orders_product_id" ON "public"."tokenization_orders" ("product_id");
+CREATE INDEX IF NOT EXISTS "idx_tokenization_orders_status" ON "public"."tokenization_orders" ("status");
 
 CREATE UNIQUE INDEX IF NOT EXISTS "tokenization_products_sku_key" ON "public"."tokenization_products" ("sku");
 

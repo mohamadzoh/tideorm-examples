@@ -4,8 +4,8 @@
 
 #![allow(dead_code)]
 
-use tideorm::database::db;
 use tideorm::Database;
+use tideorm::database::db;
 
 fn internal_connection() -> Option<tideorm::internal::DatabaseConnection> {
     db().__internal_connection().ok()
@@ -13,8 +13,8 @@ fn internal_connection() -> Option<tideorm::internal::DatabaseConnection> {
 
 /// Check if a table exists in the database
 pub async fn table_exists(table_name: &str) -> bool {
-    use tideorm::internal::{ConnectionTrait, Statement};
-    
+    use tideorm::internal::{ConnectionTrait, OrmStatement};
+
     let sql = format!(
         r#"
         SELECT EXISTS (
@@ -25,26 +25,24 @@ pub async fn table_exists(table_name: &str) -> bool {
         "#,
         table_name
     );
-    
+
     let Some(connection) = internal_connection() else {
         return false;
     };
 
     let backend = connection.get_database_backend();
-    let stmt = Statement::from_string(backend, sql);
-    
+    let stmt = OrmStatement::from_string(backend, sql);
+
     match connection.query_one_raw(stmt).await {
-        Ok(Some(row)) => {
-            row.try_get::<bool>("", "exists").unwrap_or(false)
-        }
+        Ok(Some(row)) => row.try_get::<bool>("", "exists").unwrap_or(false),
         _ => false,
     }
 }
 
 /// Check if a column exists in a table
 pub async fn column_exists(table_name: &str, column_name: &str) -> bool {
-    use tideorm::internal::{ConnectionTrait, Statement};
-    
+    use tideorm::internal::{ConnectionTrait, OrmStatement};
+
     let sql = format!(
         r#"
         SELECT EXISTS (
@@ -56,18 +54,16 @@ pub async fn column_exists(table_name: &str, column_name: &str) -> bool {
         "#,
         table_name, column_name
     );
-    
+
     let Some(connection) = internal_connection() else {
         return false;
     };
 
     let backend = connection.get_database_backend();
-    let stmt = Statement::from_string(backend, sql);
-    
+    let stmt = OrmStatement::from_string(backend, sql);
+
     match connection.query_one_raw(stmt).await {
-        Ok(Some(row)) => {
-            row.try_get::<bool>("", "exists").unwrap_or(false)
-        }
+        Ok(Some(row)) => row.try_get::<bool>("", "exists").unwrap_or(false),
         _ => false,
     }
 }
@@ -75,8 +71,8 @@ pub async fn column_exists(table_name: &str, column_name: &str) -> bool {
 /// Check if an index exists
 #[allow(dead_code)]
 pub async fn index_exists(index_name: &str) -> bool {
-    use tideorm::internal::{ConnectionTrait, Statement};
-    
+    use tideorm::internal::{ConnectionTrait, OrmStatement};
+
     let sql = format!(
         r#"
         SELECT EXISTS (
@@ -87,43 +83,38 @@ pub async fn index_exists(index_name: &str) -> bool {
         "#,
         index_name
     );
-    
+
     let Some(connection) = internal_connection() else {
         return false;
     };
 
     let backend = connection.get_database_backend();
-    let stmt = Statement::from_string(backend, sql);
-    
+    let stmt = OrmStatement::from_string(backend, sql);
+
     match connection.query_one_raw(stmt).await {
-        Ok(Some(row)) => {
-            row.try_get::<bool>("", "exists").unwrap_or(false)
-        }
+        Ok(Some(row)) => row.try_get::<bool>("", "exists").unwrap_or(false),
         _ => false,
     }
 }
 
 /// Get count of records in migrations table
 pub async fn get_migration_count() -> i64 {
-    use tideorm::internal::{ConnectionTrait, Statement};
-    
+    use tideorm::internal::{ConnectionTrait, OrmStatement};
+
     let sql = r#"SELECT COUNT(*)::bigint as cnt FROM "_migrations""#;
-    
+
     let Some(connection) = internal_connection() else {
         return 0;
     };
 
     let backend = connection.get_database_backend();
-    let stmt = Statement::from_string(backend, sql.to_string());
-    
+    let stmt = OrmStatement::from_string(backend, sql.to_string());
+
     match connection.query_one_raw(stmt).await {
-        Ok(Some(row)) => {
-            // Try different column access methods
-            let result = row.try_get::<i64>("", "cnt")
-                .or_else(|_| row.try_get_by_index::<i64>(0))
-                .unwrap_or(0);
-            result
-        }
+        Ok(Some(row)) => row
+            .try_get::<i64>("", "cnt")
+            .or_else(|_| row.try_get_by_index::<i64>(0))
+            .unwrap_or(0),
         Ok(None) => 0,
         Err(_) => 0,
     }
@@ -131,23 +122,23 @@ pub async fn get_migration_count() -> i64 {
 
 /// Get count of test migrations (those with version starting with "20260106_")
 pub async fn get_test_migration_count() -> i64 {
-    use tideorm::internal::{ConnectionTrait, Statement};
-    
-    let sql = r#"SELECT COUNT(*)::bigint as cnt FROM "_migrations" WHERE "version" LIKE '20260106_%'"#;
-    
+    use tideorm::internal::{ConnectionTrait, OrmStatement};
+
+    let sql =
+        r#"SELECT COUNT(*)::bigint as cnt FROM "_migrations" WHERE "version" LIKE '20260106_%'"#;
+
     let Some(connection) = internal_connection() else {
         return 0;
     };
 
     let backend = connection.get_database_backend();
-    let stmt = Statement::from_string(backend, sql.to_string());
-    
+    let stmt = OrmStatement::from_string(backend, sql.to_string());
+
     match connection.query_one_raw(stmt).await {
-        Ok(Some(row)) => {
-            row.try_get::<i64>("", "cnt")
-                .or_else(|_| row.try_get_by_index::<i64>(0))
-                .unwrap_or(0)
-        }
+        Ok(Some(row)) => row
+            .try_get::<i64>("", "cnt")
+            .or_else(|_| row.try_get_by_index::<i64>(0))
+            .unwrap_or(0),
         Ok(None) => 0,
         Err(_) => 0,
     }
@@ -155,46 +146,44 @@ pub async fn get_test_migration_count() -> i64 {
 
 /// Get all applied migration versions
 pub async fn get_applied_versions() -> Vec<String> {
-    use tideorm::internal::{ConnectionTrait, Statement};
-    
+    use tideorm::internal::{ConnectionTrait, OrmStatement};
+
     let sql = r#"SELECT "version" FROM "_migrations" ORDER BY "version" ASC"#;
-    
+
     let Some(connection) = internal_connection() else {
         return Vec::new();
     };
 
     let backend = connection.get_database_backend();
-    let stmt = Statement::from_string(backend, sql.to_string());
-    
+    let stmt = OrmStatement::from_string(backend, sql.to_string());
+
     match connection.query_all_raw(stmt).await {
-        Ok(rows) => {
-            rows.iter()
-                .filter_map(|row| row.try_get::<String>("", "version").ok())
-                .collect()
-        }
+        Ok(rows) => rows
+            .iter()
+            .filter_map(|row| row.try_get::<String>("", "version").ok())
+            .collect(),
         _ => Vec::new(),
     }
 }
 
 /// Get applied test migration versions (those with version starting with "20260106_")
 pub async fn get_test_applied_versions() -> Vec<String> {
-    use tideorm::internal::{ConnectionTrait, Statement};
-    
+    use tideorm::internal::{ConnectionTrait, OrmStatement};
+
     let sql = r#"SELECT "version" FROM "_migrations" WHERE "version" LIKE '20260106_%' ORDER BY "version" ASC"#;
-    
+
     let Some(connection) = internal_connection() else {
         return Vec::new();
     };
 
     let backend = connection.get_database_backend();
-    let stmt = Statement::from_string(backend, sql.to_string());
-    
+    let stmt = OrmStatement::from_string(backend, sql.to_string());
+
     match connection.query_all_raw(stmt).await {
-        Ok(rows) => {
-            rows.iter()
-                .filter_map(|row| row.try_get::<String>("", "version").ok())
-                .collect()
-        }
+        Ok(rows) => rows
+            .iter()
+            .filter_map(|row| row.try_get::<String>("", "version").ok())
+            .collect(),
         _ => Vec::new(),
     }
 }
@@ -207,17 +196,16 @@ pub async fn cleanup_test_tables() -> tideorm::Result<()> {
         "test_orders",
         "test_products",
     ];
-    
+
     for table in tables {
         let sql = format!(r#"DROP TABLE IF EXISTS "{}" CASCADE"#, table);
         let _ = Database::execute(&sql).await;
     }
-    
+
     // Also clean up migrations table entries for test migrations
-    let _ = Database::execute(
-        r#"DELETE FROM "_migrations" WHERE "version" LIKE '20260106_%'"#
-    ).await;
-    
+    let _ =
+        Database::execute(r#"DELETE FROM "_migrations" WHERE "version" LIKE '20260106_%'"#).await;
+
     Ok(())
 }
 

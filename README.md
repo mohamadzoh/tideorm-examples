@@ -10,7 +10,7 @@ Example applications demonstrating various [TideORM](https://github.com/mohamadz
 
 This repository contains comprehensive examples showcasing the features and capabilities of TideORM - a developer-friendly ORM for Rust with clean, expressive syntax. These examples are designed to help you learn and understand how to use TideORM effectively in your projects.
 
-These examples are aligned with TideORM 0.9.0 and use the current inline model syntax:
+These examples are aligned with the current TideORM 0.9.14 APIs and use the current inline model syntax:
 
 ```rust
 #[tideorm::model(table = "users")]
@@ -30,7 +30,7 @@ Before running any examples, ensure you have:
 2. **Database** (PostgreSQL, MySQL, or SQLite depending on the example)
 3. **Environment configuration** via `.env` file
 
-> Current note: this branch depends on the sibling `../tideorm` checkout because the new `entity-manager` feature has not been published in a crates.io TideORM release yet.
+> Current note: this branch depends on the sibling `../tideorm` checkout so it can exercise the latest local TideORM features, including source-path model discovery, dirty tracking, and the entity manager.
 
 ### Database Setup
 
@@ -89,14 +89,16 @@ To print the commands without executing them:
 | **sqlite_demo** | SQLite embedded database | `cargo run --bin sqlite_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **migrations** | Database schema migrations | `cargo run --bin migrations` |
 | **schema_file_demo** | SQL schema file generation | `cargo run --bin schema_file_demo` |
-
+| **auto_model_discovery_demo** | Source-path model registration with `models_matching(...)` | `cargo run --bin auto_model_discovery_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **validation_demo** | Model validation system | `cargo run --bin validation_demo` |
+| **dirty_tracking_demo** | Opt-in dirty tracking with `changed_fields()` and `original_value()` | `cargo run --bin dirty_tracking_demo --features "sqlite runtime-tokio dirty-tracking" --no-default-features` |
 | **caching_demo** | Query caching features | `cargo run --bin caching_demo` |
 | **profiling_demo** | Query profiling and optimization analysis | `cargo run --bin profiling_demo` |
 | **logging_callbacks_demo** | Query logging, query debug output, lifecycle callbacks, and error context | `cargo run --bin logging_callbacks_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **relations_foreign_keys_demo** | Focused relations and foreign-key demo with SQLite | `cargo run --bin relations_foreign_keys_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **entity_manager_demo** | Explicit persistence context, aggregate saves, and managed lifecycle operations | `cargo run --bin entity_manager_demo --features "sqlite runtime-tokio entity-manager" --no-default-features` |
 | **fulltext_demo** | Full-text search with highlighting | `cargo run --bin fulltext_demo` |
+| **encrypted_fields_demo** | Model-level encrypted columns with ciphertext-at-rest inspection | `cargo run --bin encrypted_fields_demo --features "sqlite runtime-tokio encrypted-fields" --no-default-features` |
 | **tokenization_demo** | Secure record ID tokenization | `cargo run --bin tokenization_demo` |
 | **attachments_translations_demo** | File attachments & i18n | `cargo run --bin attachments_translations_demo` |
 | **attachment_url_demo** | Attachment URL generation | `cargo run --bin attachment_url_demo` |
@@ -173,12 +175,28 @@ Generate SQL schema files from your models.
 cargo run --bin schema_file_demo
 ```
 
+### 🧭 Auto Model Discovery
+
+Register compiled models for schema sync by matching their source paths with `models_matching(...)`.
+
+```bash
+cargo run --bin auto_model_discovery_demo --features "sqlite runtime-tokio" --no-default-features
+```
+
 ### ✅ Validation
 
 Model validation with built-in and custom validators.
 
 ```bash
 cargo run --bin validation_demo
+```
+
+### ✍️ Dirty Tracking
+
+Inspect pending model changes with `changed_fields()` and `original_value()` when the `dirty-tracking` feature is enabled.
+
+```bash
+cargo run --bin dirty_tracking_demo --features "sqlite runtime-tokio dirty-tracking" --no-default-features
 ```
 
 ### 💾 Caching
@@ -217,7 +235,7 @@ cargo run --bin relations_foreign_keys_demo --features "sqlite runtime-tokio" --
 
 Explicit persistence context workflows, aggregate saves across loaded relations, and managed lifecycle operations.
 
-This example currently relies on the local sibling `../tideorm` checkout until the `entity-manager` feature ships in a published TideORM release.
+This example currently relies on the local sibling `../tideorm` checkout along with the other latest TideORM demos in this repo.
 
 ```bash
 cargo run --bin entity_manager_demo --features "sqlite runtime-tokio entity-manager" --no-default-features
@@ -229,6 +247,14 @@ PostgreSQL full-text search with ranking and highlighting.
 
 ```bash
 cargo run --bin fulltext_demo
+```
+
+### 🔒 Encrypted Fields
+
+Store selected `String` and `Option<String>` columns as ciphertext in the database while keeping plaintext values in Rust models.
+
+```bash
+cargo run --bin encrypted_fields_demo --features "sqlite runtime-tokio encrypted-fields" --no-default-features
 ```
 
 ### 🔐 Tokenization

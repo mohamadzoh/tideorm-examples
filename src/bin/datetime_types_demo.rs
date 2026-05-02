@@ -27,7 +27,7 @@ use tideorm::prelude::*;
 // ============================================================================
 
 /// User session with timezone-aware timestamps
-/// 
+///
 /// Use `DateTime<Utc>` for timestamps that should track timezone information.
 /// This maps to TIMESTAMPTZ in PostgreSQL.
 #[tideorm::model(table = "sessions")]
@@ -36,20 +36,20 @@ pub struct Session {
     pub id: i64,
     pub user_id: i64,
     pub token: String,
-    
+
     /// When the session expires - uses TIMESTAMPTZ
     pub expires_at: chrono::DateTime<chrono::Utc>,
-    
+
     /// Last activity time - nullable TIMESTAMPTZ
     pub last_activity_at: Option<chrono::DateTime<chrono::Utc>>,
-    
+
     /// Standard timestamps - also use TIMESTAMPTZ
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// Event with date-only field
-/// 
+///
 /// Use `NaiveDate` when you only need the date without time.
 /// This maps to DATE in all databases.
 #[tideorm::model(table = "events")]
@@ -57,19 +57,19 @@ pub struct Event {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
-    
+
     /// Event date - uses DATE type
     pub event_date: chrono::NaiveDate,
-    
+
     /// Optional end date
     pub end_date: Option<chrono::NaiveDate>,
-    
+
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// Daily schedule with time-only fields
-/// 
+///
 /// Use `NaiveTime` when you only need time without date.
 /// This maps to TIME in PostgreSQL/MySQL.
 #[tideorm::model(table = "schedules")]
@@ -77,19 +77,19 @@ pub struct Schedule {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
     pub name: String,
-    
+
     /// Start time - uses TIME type
     pub start_time: chrono::NaiveTime,
-    
+
     /// End time - uses TIME type  
     pub end_time: chrono::NaiveTime,
-    
+
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// Log entry with naive datetime (no timezone)
-/// 
+///
 /// Use `NaiveDateTime` when timezone is not relevant (e.g., local time logs).
 /// This maps to TIMESTAMP (without time zone) in PostgreSQL.
 #[tideorm::model(table = "logs")]
@@ -98,7 +98,7 @@ pub struct Log {
     pub id: i64,
     pub message: String,
     pub level: String,
-    
+
     /// Local timestamp without timezone - uses TIMESTAMP
     pub logged_at: chrono::NaiveDateTime,
 }
@@ -128,10 +128,10 @@ impl Migration for CreateDateTimeTables {
                 t.id();
                 t.big_integer("user_id").not_null();
                 t.string("token").unique().not_null();
-                
+
                 // TIMESTAMPTZ - for DateTime<Utc>
                 t.timestamptz("expires_at").not_null();
-                t.timestamptz("last_activity_at").nullable();                
+                t.timestamptz("last_activity_at").nullable();
                 // timestamps() now uses TIMESTAMPTZ by default
                 t.timestamps();
             })
@@ -142,11 +142,11 @@ impl Migration for CreateDateTimeTables {
             .create_table("events", |t| {
                 t.id();
                 t.string("name").not_null();
-                
+
                 // DATE - for NaiveDate
                 t.date("event_date").not_null();
                 t.date("end_date").nullable();
-                
+
                 t.timestamps();
             })
             .await?;
@@ -156,11 +156,11 @@ impl Migration for CreateDateTimeTables {
             .create_table("schedules", |t| {
                 t.id();
                 t.string("name").not_null();
-                
+
                 // TIME - for NaiveTime
                 t.time("start_time").not_null();
                 t.time("end_time").not_null();
-                
+
                 t.timestamps();
             })
             .await?;
@@ -171,7 +171,7 @@ impl Migration for CreateDateTimeTables {
                 t.id();
                 t.text("message").not_null();
                 t.string("level").not_null();
-                
+
                 // TIMESTAMP (without timezone) - for NaiveDateTime
                 t.timestamp("logged_at").default_now().not_null();
             })
@@ -190,7 +190,8 @@ impl Migration for CreateDateTimeTables {
 }
 
 async fn reset_demo_schema() {
-    let _ = Database::execute(r#"DELETE FROM "_migrations" WHERE "version" = '20260115_001'"#).await;
+    let _ =
+        Database::execute(r#"DELETE FROM "_migrations" WHERE "version" = '20260115_001'"#).await;
     let _ = Database::execute("DROP TABLE IF EXISTS logs CASCADE").await;
     let _ = Database::execute("DROP TABLE IF EXISTS schedules CASCADE").await;
     let _ = Database::execute("DROP TABLE IF EXISTS events CASCADE").await;
@@ -204,14 +205,11 @@ async fn reset_demo_schema() {
 #[tokio::main]
 async fn main() -> tideorm::Result<()> {
     println!("=== TideORM Date/Time Types Demo ===\n");
- let _ = dotenvy::dotenv();
+    let _ = dotenvy::dotenv();
     let db_url = std::env::var("POSTGRESQL_DATABASE_URL").unwrap();
-    
+
     // Connect to database
-    TideConfig::init()
-        .database(&db_url)
-        .connect()
-        .await?;
+    TideConfig::init().database(&db_url).connect().await?;
 
     println!("Connected to database.\n");
 
@@ -221,17 +219,14 @@ async fn main() -> tideorm::Result<()> {
 
     // Run migrations
     println!("Running migrations...");
-    Migrator::new()
-        .add(CreateDateTimeTables::default())
-        .run()
-        .await?;
+    Migrator::new().add(CreateDateTimeTables).run().await?;
     println!("Migrations complete.\n");
 
     // ========================================================================
     // DEMO: DateTime<Utc> - TIMESTAMPTZ
     // ========================================================================
     println!("--- Demo: DateTime<Utc> (TIMESTAMPTZ) ---");
-    
+
     let now = chrono::Utc::now();
     let session = Session {
         id: 0,
@@ -251,7 +246,7 @@ async fn main() -> tideorm::Result<()> {
     // DEMO: NaiveDate - DATE
     // ========================================================================
     println!("--- Demo: NaiveDate (DATE) ---");
-    
+
     let event = Event {
         id: 0,
         name: "Conference".to_string(),
@@ -269,7 +264,7 @@ async fn main() -> tideorm::Result<()> {
     // DEMO: NaiveTime - TIME
     // ========================================================================
     println!("--- Demo: NaiveTime (TIME) ---");
-    
+
     let schedule = Schedule {
         id: 0,
         name: "Morning Standup".to_string(),
@@ -279,7 +274,10 @@ async fn main() -> tideorm::Result<()> {
         updated_at: now,
     };
     let schedule = schedule.save().await?;
-    println!("Created schedule: {} - {}", schedule.start_time, schedule.end_time);
+    println!(
+        "Created schedule: {} - {}",
+        schedule.start_time, schedule.end_time
+    );
     println!("  - start_time/end_time are stored as TIME in PostgreSQL");
     println!("  - Only stores the time, no date component\n");
 
@@ -287,7 +285,7 @@ async fn main() -> tideorm::Result<()> {
     // DEMO: NaiveDateTime - TIMESTAMP
     // ========================================================================
     println!("--- Demo: NaiveDateTime (TIMESTAMP) ---");
-    
+
     let log = Log {
         id: 0,
         message: "Application started".to_string(),
@@ -303,17 +301,14 @@ async fn main() -> tideorm::Result<()> {
     // QUERYING
     // ========================================================================
     println!("--- Querying ---");
-    
+
     // Query all sessions for a user (integer comparison works fine)
-    let user_sessions = Session::query()
-        .where_eq("user_id", 1)
-        .get()
-        .await?;
+    let user_sessions = Session::query().where_eq("user_id", 1).get().await?;
     println!("Found {} sessions for user 1", user_sessions.len());
 
     // For date/time comparisons in PostgreSQL, use where_raw with proper SQL
     // This ensures PostgreSQL handles the type casting correctly
-    
+
     // Query events in March 2026 using DATE literals
     let march_events = Event::query()
         .where_raw("event_date >= '2026-03-01'::date")
@@ -328,7 +323,7 @@ async fn main() -> tideorm::Result<()> {
         .get()
         .await?;
     println!("Found {} morning schedules", morning_schedules.len());
-    
+
     // Query active sessions using TIMESTAMPTZ comparison
     let active_sessions = Session::query()
         .where_raw("expires_at > NOW()")
