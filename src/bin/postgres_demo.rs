@@ -164,6 +164,17 @@ pub struct Post {
     
     /// Soft delete timestamp (null = not deleted)
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
+
+    /// Translations for the `translatable` fields, stored as JSONB.
+    /// Format: {"title": {"en": "...", "ar": "..."}, "content": {...}}
+    ///
+    /// Declaring `translatable = ...` requires this column: the derive stores
+    /// every translation here, so a model without it has nowhere to keep them.
+    pub translations: Option<JsonValue>,
+
+    /// Attachments for the `has_one_files` / `has_many_files` fields, as JSONB.
+    /// Format: {"thumbnail": {...}, "images": [...], "documents": [...]}
+    pub files: Option<JsonValue>,
 }
 
 impl Post {
@@ -184,6 +195,8 @@ impl Post {
             created_at: now,
             updated_at: now,
             deleted_at: None,
+            translations: None,
+            files: None,
         }
     }
     
@@ -286,7 +299,9 @@ CREATE TABLE posts (
     published_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+    translations JSONB,
+    files JSONB
 );
 
 -- Create indexes

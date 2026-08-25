@@ -31,7 +31,7 @@ encrypted-fields = ["tideorm/encrypted-fields"]
 # TideORM - the main ORM crate
 # This repo tracks the sibling TideORM checkout so examples can cover the latest
 # unreleased APIs before the next crates.io release is available.
-tideorm = { version = "0.9.15", default-features = false }
+tideorm = { version = "0.10.0", default-features = false }
 # Async runtime
 tokio = { version = "1.51.0", features = ["full"], optional = true }
 async-trait = "0.1.89"

@@ -368,20 +368,3 @@ fn example_cache_key_builder() {
     
     println!("Cache key hash: {}", hash);
 }
-
-/// Example: Custom cache options with tags
-#[allow(dead_code)]
-async fn example_cache_with_tags() -> tideorm::Result<()> {
-    let options = CacheOptions::new(Duration::from_secs(300))
-        .with_key("active_premium_users")
-        .with_tags(&["users", "premium", "active"]);
-    
-    let _users = User::query()
-        .where_eq("active", true)
-        .where_eq("role", "premium")
-        .cache_with_options(options)
-        .get()
-        .await?;
-    
-    Ok(())
-}
