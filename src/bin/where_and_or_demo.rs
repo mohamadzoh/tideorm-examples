@@ -527,86 +527,98 @@ async fn test_between_conditions() -> tideorm::Result<()> {
 
 async fn test_simple_or_conditions() -> tideorm::Result<()> {
     test_section!("7. SIMPLE OR CONDITIONS");
-    
+
+    // Every `or_where_*` call on a query joins one OR group, and that group is
+    // ANDed with the rest of the query, so each alternative is an `or_where_*`.
+
     // Test: or_where_eq
     test_case!("or_where_eq - Apple OR Samsung products");
     let results = Product::query()
-        .where_eq("brand", "Apple")
+        .or_where_eq("brand", "Apple")
         .or_where_eq("brand", "Samsung")
         .get()
         .await?;
     print_products(&results, 10);
+    assert_test!(!results.is_empty(), "Should find Apple and Samsung products");
     assert_test!(
         results.iter().all(|p| p.brand == "Apple" || p.brand == "Samsung"),
         "All should be Apple or Samsung"
     );
     println!("   Found {} Apple/Samsung products", results.len());
-    
-    // Test: or_where_gt
+
+    // Test: or_where_lt / or_where_gt
     test_case!("or_where_gt - Cheap (<$50) OR expensive (>$1000)");
     let results = Product::query()
-        .where_lt("price", 50.0)
+        .or_where_lt("price", 50.0)
         .or_where_gt("price", 1000.0)
         .get()
         .await?;
     print_products(&results, 5);
+    assert_test!(!results.is_empty(), "Should find cheap or expensive products");
     assert_test!(
         results.iter().all(|p| p.price < 50.0 || p.price > 1000.0),
         "All should be cheap or expensive"
     );
-    
+
     // Test: or_where_like
     test_case!("or_where_like - Name contains 'Pro' OR 'Premium'");
     let results = Product::query()
-        .where_like("name", "%Pro%")
+        .or_where_like("name", "%Pro%")
         .or_where_like("description", "%Premium%")
         .get()
         .await?;
     print_products(&results, 5);
+    assert_test!(!results.is_empty(), "Should find Pro or Premium products");
     assert_test!(
-        results.iter().all(|p| 
-            p.name.contains("Pro") || 
+        results.iter().all(|p|
+            p.name.contains("Pro") ||
             p.description.as_ref().map(|d| d.contains("Premium")).unwrap_or(false)
         ),
         "All should contain Pro or Premium"
     );
-    
+
     // Test: or_where_in
-    test_case!("or_where_in - Nike/Adidas clothing OR O'Reilly books");
+    test_case!("or_where_in - Nike/Adidas OR O'Reilly products");
     let results = Product::query()
-        .where_eq("category", "Clothing")
-        .where_in("brand", vec!["Nike", "Adidas"])
+        .or_where_in("brand", vec!["Nike", "Adidas"])
         .or_where_eq("brand", "O'Reilly")
         .get()
         .await?;
     print_products(&results, 10);
-    
+    assert_test!(!results.is_empty(), "Should find Nike, Adidas or O'Reilly products");
+    assert_test!(
+        results.iter().all(|p| ["Nike", "Adidas", "O'Reilly"].contains(&p.brand.as_str())),
+        "All should be Nike, Adidas or O'Reilly"
+    );
+
     // Test: or_where_null
     test_case!("or_where_null - Featured OR no description");
     let results = Product::query()
-        .where_eq("featured", true)
+        .or_where_eq("featured", true)
         .or_where_null("description")
         .get()
         .await?;
     print_products(&results, 5);
+    assert_test!(!results.is_empty(), "Should find featured or undescribed products");
     assert_test!(
         results.iter().all(|p| p.featured || p.description.is_none()),
         "All should be featured or have no description"
     );
-    
+
     // Test: or_where_between
     test_case!("or_where_between - Low stock (<50) OR high stock (>300)");
     let results = Product::query()
-        .where_lt("stock", 50)
+        .or_where_between("stock", 0, 49)
         .or_where_gt("stock", 300)
         .get()
         .await?;
     print_products(&results, 5);
+    assert_test!(!results.is_empty(), "Should find low- or high-stock products");
     assert_test!(
         results.iter().all(|p| p.stock < 50 || p.stock > 300),
         "All should have low or high stock"
     );
-    
+
     Ok(())
 }
 

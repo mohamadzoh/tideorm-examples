@@ -458,16 +458,18 @@ fn demo_eager_loading_builder() {
 
     println!("Eager loading avoids N+1 query patterns when traversing relations:\n");
 
-    println!("1. Start from the model:");
-    println!("   let users = User::with_relation(\"profile\")");
+    println!("1. Start from a query:");
+    println!("   let users = User::query()");
     println!("       .where_eq(\"status\", \"active\")");
+    println!("       .with(\"profile\")");
     println!("       .order_by(\"created_at\", Order::Desc)");
     println!("       .get()");
     println!("       .await?;\n");
 
     println!("2. Load multiple relations in one pass:");
-    println!("   let users = User::with_relations(&[\"profile\", \"posts\", \"posts.comments\"])");
+    println!("   let users = User::query()");
     println!("       .limit(10)");
+    println!("       .with_many(&[\"profile\", \"posts\", \"posts.comments\"])");
     println!("       .get()");
     println!("       .await?;\n");
 

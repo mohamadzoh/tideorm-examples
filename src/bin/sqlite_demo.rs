@@ -63,15 +63,10 @@ async fn main() -> tideorm::Result<()> {
     println!("✓ Connected successfully!\n");
 
     // Check database features
-    let db_type = Database::global().backend();
+    let db_type = db().backend();
     println!("Database Features:");
-    println!("  - JSON support: {} (JSON1 extension)", db_type.supports_json());
     println!("  - Arrays: {} (use JSON instead)", db_type.supports_arrays());
     println!("  - RETURNING clause: {} (SQLite 3.35+)", db_type.supports_returning());
-    println!("  - Upsert: {}", db_type.supports_upsert());
-    println!("  - Window functions: {} (SQLite 3.25+)", db_type.supports_window_functions());
-    println!("  - CTEs: {} (SQLite 3.8+)", db_type.supports_cte());
-    println!("  - Parameter style: {}", db_type.param_style());
     println!("  - Optimal batch size: {}", db_type.optimal_batch_size());
     println!();
 

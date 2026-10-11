@@ -100,7 +100,7 @@ struct LineItemSummary {
 /// User model - demonstrates has_many and has_one relations
 #[tideorm::model(
     table = "users",
-    hidden = "password_hash,deleted_at",
+    hidden = "password_hash",
     searchable = "name,email"
 )]
 #[index("email")]
@@ -645,13 +645,14 @@ async fn main() -> tideorm::Result<()> {
     );
 
     println!("\n🔎 Eager loading builder...");
-    let eager_users = <User as EagerLoadExt>::with_relations(&["profile", "posts"])
+    let eager_users = User::query()
         .where_eq("status", "active")
         .limit(3)
+        .with_many(&["profile", "posts"])
         .get()
         .await?;
     println!(
-        "   with_relations(['profile', 'posts']): {} users",
+        "   with_many(['profile', 'posts']): {} users",
         eager_users.len()
     );
     if let Some(first_user) = eager_users.first() {
@@ -846,6 +847,21 @@ async fn main() -> tideorm::Result<()> {
         without_size.len()
     );
 
+    // where_json_path_exists / where_json_path_not_exists - a nested member
+    let with_ram = Product::query()
+        .where_json_path_exists("attributes", "$.specs.ram")
+        .get()
+        .await?;
+    let without_ram = Product::query()
+        .where_json_path_not_exists("attributes", "$.specs.ram")
+        .get()
+        .await?;
+    println!(
+        "   where_json_path_exists('$.specs.ram'): {} products, where_json_path_not_exists: {} products",
+        with_ram.len(),
+        without_ram.len()
+    );
+
     // ========================================================================
     // 6. ARRAY OPERATIONS (PostgreSQL)
     // ========================================================================
@@ -911,7 +927,7 @@ async fn main() -> tideorm::Result<()> {
     // Query excluding soft deleted (default behavior with SoftDelete trait)
     let all_posts = Post::all().await?;
     println!(
-        "   Post::all() (includes soft deleted for now): {} posts",
+        "   Post::all() (soft-deleted posts left out): {} posts",
         all_posts.len()
     );
 
@@ -923,8 +939,13 @@ async fn main() -> tideorm::Result<()> {
     let only_trashed = Post::query().only_trashed().get().await?;
     println!("   only_trashed(): {} posts", only_trashed.len());
 
-    // Restore
-    let post_to_restore = Post::find_or_fail(temp_post.id).await?;
+    // Restore. `find` leaves a trashed row out like every read; a query that
+    // includes the trash reads it by key.
+    let post_to_restore = Post::query()
+        .with_trashed()
+        .find(temp_post.id)
+        .await?
+        .expect("a trashed post is loadable by id with with_trashed()");
     let restored = post_to_restore.restore().await?;
     println!("   Restored: deleted_at = {:?}", restored.deleted_at);
 
@@ -1002,15 +1023,15 @@ async fn main() -> tideorm::Result<()> {
     }
 
     // Use scopes
-    let active_users = User::query().scope(active_scope).get().await?;
-    println!("   scope(active): {} users", active_users.len());
+    let active_users = active_scope(User::query()).get().await?;
+    println!("   active_scope: {} users", active_users.len());
 
-    let published_posts: Vec<Post> = Post::query().scope(published_scope).get().await?;
-    println!("   scope(published): {} posts", published_posts.len());
+    let published_posts: Vec<Post> = published_scope(Post::query()).get().await?;
+    println!("   published_scope: {} posts", published_posts.len());
 
-    let expensive_products = Product::query().scope(expensive_scope).get().await?;
+    let expensive_products = expensive_scope(Product::query()).get().await?;
     println!(
-        "   scope(expensive > $100): {} products",
+        "   expensive_scope (> $100): {} products",
         expensive_products.len()
     );
 
@@ -1287,36 +1308,45 @@ async fn main() -> tideorm::Result<()> {
 
     println!("📊 Aggregation Functions...");
 
-    // SUM - total price of all products
-    let total_price = Product::query()
+    // SUM - total price of all products, exact in the column's own type
+    let total_price: i64 = Product::query()
         .where_eq("active", true)
         .sum("price")
         .await?;
     println!(
         "   SUM (total price of active products): ${:.2}",
-        total_price / 100.0
+        total_price as f64 / 100.0
     );
 
-    // AVG - average price of products
-    let avg_price = Product::query()
+    // AVG - average price of products; AVG, MIN and MAX over no rows are NULL
+    let avg_price: Option<f64> = Product::query()
         .where_eq("active", true)
         .avg("price")
         .await?;
-    println!("   AVG (average price): ${:.2}", avg_price / 100.0);
+    println!(
+        "   AVG (average price): ${:.2}",
+        avg_price.unwrap_or_default() / 100.0
+    );
 
     // MIN - minimum price
-    let min_price = Product::query()
+    let min_price: Option<i64> = Product::query()
         .where_eq("active", true)
         .min("price")
         .await?;
-    println!("   MIN (cheapest product): ${:.2}", min_price / 100.0);
+    println!(
+        "   MIN (cheapest product): ${:.2}",
+        min_price.unwrap_or_default() as f64 / 100.0
+    );
 
     // MAX - maximum price
-    let max_price = Product::query()
+    let max_price: Option<i64> = Product::query()
         .where_eq("active", true)
         .max("price")
         .await?;
-    println!("   MAX (most expensive): ${:.2}", max_price / 100.0);
+    println!(
+        "   MAX (most expensive): ${:.2}",
+        max_price.unwrap_or_default() as f64 / 100.0
+    );
 
     // COUNT DISTINCT - unique categories
     let unique_categories = Product::query()
@@ -1350,14 +1380,14 @@ async fn main() -> tideorm::Result<()> {
         .where_eq("category", "Electronics")
         .count()
         .await?;
-    let electronics_sum = Product::query()
+    let electronics_sum: i64 = Product::query()
         .where_eq("category", "Electronics")
         .sum("price")
         .await?;
     println!(
         "   Electronics: {} products, total ${:.2}",
         electronics_stats,
-        electronics_sum / 100.0
+        electronics_sum as f64 / 100.0
     );
 
     // Using QueryBuilder's group_by and having helpers

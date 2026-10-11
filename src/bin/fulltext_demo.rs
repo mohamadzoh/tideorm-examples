@@ -153,7 +153,6 @@ fn search_config_examples() {
     println!("  B: {}", weights.b);
     println!("  C: {}", weights.c);
     println!("  D (lowest): {}", weights.d);
-    println!("  PostgreSQL array: {}", weights.to_pg_array());
     
     // Configuration with weights
     let ranked_config = FullTextConfig::new()
@@ -177,7 +176,6 @@ fn search_mode_examples() {
         (SearchMode::Boolean, "Boolean mode - supports +, -, * operators"),
         (SearchMode::Phrase, "Phrase mode - matches exact phrases"),
         (SearchMode::Prefix, "Prefix mode - matches word prefixes"),
-        (SearchMode::Fuzzy, "Fuzzy mode - matches similar words (PostgreSQL)"),
         (SearchMode::Proximity(3), "Proximity mode - words within N positions"),
     ];
     
@@ -329,6 +327,7 @@ fn highlight_config_examples() {
         end_tag: "</span>".to_string(),
         max_length: Some(200),
         fragment_words: Some(15),
+        escape_html: true,
     };
     
     println!("\nCustom HighlightConfig:");
@@ -406,16 +405,18 @@ fn practical_search_examples() {
         .await?;
     
     // Search with configuration
-    let results = Article::search_with_config(
-        &["title", "content"],
-        "rust async",
-        FullTextConfig::new()
-            .language("english")
-            .mode(SearchMode::Boolean)
-    ).get().await?;
+    let results = Article::search(&["title", "content"], "rust async")
+        .config(
+            FullTextConfig::new()
+                .language("english")
+                .mode(SearchMode::Boolean),
+        )
+        .get()
+        .await?;
     
     // Search with ranking
-    let ranked = Article::search_ranked(&["title", "content"], "rust")
+    let ranked = Article::search(&["title", "content"], "rust")
+        .with_ranking()
         .limit(10)
         .get_ranked()
         .await?;
@@ -423,14 +424,6 @@ fn practical_search_examples() {
     for result in ranked {{
         println!("{{id}}: {{title}} (rank: {{rank}})", result.record.id, result.record.title, result.rank);
     }}
-    
-    // Search with highlighting
-    let highlighted = Article::search_highlighted(
-        &["content"],
-        "rust programming",
-        "<mark>",
-        "</mark>"
-    ).get().await?;
     
     // Count matching results
     let count = Article::search(&["title", "content"], "rust")

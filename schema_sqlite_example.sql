@@ -1,9 +1,9 @@
 -- TideORM Generated Schema
 -- Database: SQLite
--- Generated at: 2026-05-02 04:49:08 UTC
+-- Generated at: 2026-09-28 20:57:40 UTC
 
 CREATE TABLE IF NOT EXISTS "example" (
-    "id" INTEGER,
+    "id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     PRIMARY KEY ("id")
 );

@@ -66,14 +66,10 @@ async fn main() -> tideorm::Result<()> {
     println!("✓ Connected successfully!\n");
 
     // Check database features
-    let db_type = Database::global().backend();
+    let db_type = db().backend();
     println!("Database Features:");
-    println!("  - JSON support: {}", db_type.supports_json());
     println!("  - Arrays: {} (use JSON instead)", db_type.supports_arrays());
     println!("  - RETURNING clause: {}", db_type.supports_returning());
-    println!("  - Upsert: {}", db_type.supports_upsert());
-    println!("  - Window functions: {}", db_type.supports_window_functions());
-    println!("  - Parameter style: {}", db_type.param_style());
     println!();
 
     // =====================
@@ -152,6 +148,17 @@ async fn main() -> tideorm::Result<()> {
         .await?;
     println!("Products with 'specs' key: {}\n", with_specs.len());
 
+    // A nested member, and its absence
+    let with_gpu = Product::query()
+        .where_json_path_exists("metadata", "$.specs.gpu")
+        .count()
+        .await?;
+    let without_gpu = Product::query()
+        .where_json_path_not_exists("metadata", "$.specs.gpu")
+        .count()
+        .await?;
+    println!("Products with '$.specs.gpu': {with_gpu}, without it: {without_gpu}\n");
+
     // =====================
     // Aggregations
     // =====================
@@ -174,17 +181,18 @@ async fn main() -> tideorm::Result<()> {
     let count = Product::query().get().await?.len();
     println!("Total products: {}", count);
 
-    let avg_price = Product::query().avg("price").await?;
-    println!("Average price: ${:.2}", avg_price);
+    // AVG and MAX over no rows are NULL, so they come back as an `Option`.
+    let avg_price: Option<f64> = Product::query().avg("price").await?;
+    println!("Average price: ${:.2}", avg_price.unwrap_or_default());
 
-    let max_price = Product::query().max("price").await?;
-    println!("Max price: ${:.2}", max_price);
+    let max_price: Option<i64> = Product::query().max("price").await?;
+    println!("Max price: ${}", max_price.unwrap_or_default());
 
-    let sum_price = Product::query()
+    let sum_price: i64 = Product::query()
         .where_eq("category", "Category A")
         .sum("price")
         .await?;
-    println!("Sum of Category A prices: ${:.2}\n", sum_price);
+    println!("Sum of Category A prices: ${}\n", sum_price);
 
     // =====================
     // Pagination

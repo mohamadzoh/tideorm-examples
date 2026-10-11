@@ -42,8 +42,8 @@ use tideorm::prelude::*;
 /// User model - demonstrates basic tokenization
 /// 
 /// With tokenization enabled via `#[tideorm(tokenize)]`, you can:
-/// - Convert user IDs to encrypted tokens: `user.tokenize()`
-/// - Decode tokens back to IDs: `User::detokenize(&token)`
+/// - Convert user IDs to encrypted tokens: `user.to_token()`
+/// - Decode tokens back to IDs: `User::decode_token(&token)`
 /// - Fetch records directly from tokens: `User::from_token(&token).await`
 /// - Use tokens in URLs instead of exposing database IDs
 #[tideorm::model(table = "tokenization_users", hidden = "deleted_at", tokenize)]
@@ -331,46 +331,46 @@ async fn main() -> tideorm::Result<()> {
     // ========================================================================
     print_section("3. Basic Tokenization (Model Methods)");
     
-    println!("   Using model.tokenize() and Model::tokenize_id():");
+    println!("   Using model.to_token() and Model::tokenize_id():");
     println!();
     
-    // Tokenize users using instance method: user.tokenize()
-    let user1_token = user1.tokenize()?;
-    let user2_token = user2.tokenize()?;
-    let user3_token = user3.tokenize()?;
+    // Tokenize users using instance method: user.to_token()
+    let user1_token = user1.to_token()?;
+    let user2_token = user2.to_token()?;
+    let user3_token = user3.to_token()?;
     
-    println!("   User Tokens (using user.tokenize()):");
+    println!("   User Tokens (using user.to_token()):");
     println!("      {} (ID {}) -> {}", user1.name, user1.id, user1_token);
     println!("      {} (ID {}) -> {}", user2.name, user2.id, user2_token);
     println!("      {} (ID {}) -> {}", user3.name, user3.id, user3_token);
     println!();
     
-    // Tokenize products using instance method: product.tokenize()
-    let product1_token = product1.tokenize()?;
-    let product2_token = product2.tokenize()?;
+    // Tokenize products using instance method: product.to_token()
+    let product1_token = product1.to_token()?;
+    let product2_token = product2.to_token()?;
     
-    println!("   Product Tokens (using product.tokenize()):");
+    println!("   Product Tokens (using product.to_token()):");
     println!("      {} (ID {}) -> {}", product1.name, product1.id, product1_token);
     println!("      {} (ID {}) -> {}", product2.name, product2.id, product2_token);
     println!();
     
-    // Tokenize orders using instance method: order.tokenize()
-    let order1_token = order1.tokenize()?;
-    let order2_token = order2.tokenize()?;
+    // Tokenize orders using instance method: order.to_token()
+    let order1_token = order1.to_token()?;
+    let order2_token = order2.to_token()?;
     
-    println!("   Order Tokens (using order.tokenize()):");
+    println!("   Order Tokens (using order.to_token()):");
     println!("      Order #{} -> {}", order1.id, order1_token);
     println!("      Order #{} -> {}", order2.id, order2_token);
     println!();
     
     // ========================================================================
-    // STEP 4: Decoding Tokens using Model::detokenize()
+    // STEP 4: Decoding Tokens using Model::decode_token()
     // ========================================================================
-    print_section("4. Decoding Tokens (Model::detokenize)");
+    print_section("4. Decoding Tokens (Model::decode_token)");
     
-    println!("   Using User::detokenize() to decode tokens:");
-    let decoded_user1_id = User::detokenize(&user1_token)?;
-    let decoded_user2_id = User::detokenize(&user2_token)?;
+    println!("   Using User::decode_token() to decode tokens:");
+    let decoded_user1_id = User::decode_token(&user1_token)?;
+    let decoded_user2_id = User::decode_token(&user2_token)?;
     
     println!("      Token {}... -> ID {}", &user1_token[..20], decoded_user1_id);
     println!("      Token {}... -> ID {}", &user2_token[..20], decoded_user2_id);
@@ -380,8 +380,8 @@ async fn main() -> tideorm::Result<()> {
     println!("      ✅ User tokens decoded correctly!");
     println!();
     
-    println!("   Using Product::detokenize() to decode tokens:");
-    let decoded_product1_id = Product::detokenize(&product1_token)?;
+    println!("   Using Product::decode_token() to decode tokens:");
+    let decoded_product1_id = Product::decode_token(&product1_token)?;
     println!("      Token {}... -> ID {}", &product1_token[..20], decoded_product1_id);
     
     assert_eq!(decoded_product1_id, product1.id);
@@ -428,10 +428,10 @@ async fn main() -> tideorm::Result<()> {
     println!("   Tokens are different:    {}", user_token_for_1 != product_token_for_1);
     println!();
     
-    // Try cross-model decoding - User::detokenize on a Product token should fail
-    let cross_decode = User::detokenize(&product_token_for_1);
+    // Try cross-model decoding - User::decode_token on a Product token should fail
+    let cross_decode = User::decode_token(&product_token_for_1);
     let cross_decode_failed = cross_decode.is_err();
-    println!("   User::detokenize(product_token): {}", if cross_decode_failed { "Error (expected)" } else { "OK" });
+    println!("   User::decode_token(product_token): {}", if cross_decode_failed { "Error (expected)" } else { "OK" });
     assert!(cross_decode_failed);
     println!("   ✅ Cross-model token reuse prevented!");
     println!();
@@ -441,7 +441,7 @@ async fn main() -> tideorm::Result<()> {
     // ========================================================================
     print_section("7. Tamper Detection");
     
-    let original_token = user1.tokenize()?;
+    let original_token = user1.to_token()?;
     
     // Tamper with the token
     let mut tampered_bytes: Vec<u8> = original_token.bytes().collect();
@@ -454,8 +454,8 @@ async fn main() -> tideorm::Result<()> {
     println!("   Tampered token:  {}", tampered_token);
     println!();
     
-    let original_decode = User::detokenize(&original_token);
-    let tampered_decode = User::detokenize(&tampered_token);
+    let original_decode = User::decode_token(&original_token);
+    let tampered_decode = User::decode_token(&tampered_token);
     
     println!("   Original decodes to: {:?}", original_decode.as_ref().ok());
     println!("   Tampered decodes to: {}", if tampered_decode.is_err() { "Error (expected)" } else { "OK" });
@@ -478,9 +478,9 @@ async fn main() -> tideorm::Result<()> {
         ("Spaces", "token with spaces"),
     ];
     
-    println!("   Testing invalid token rejection with User::detokenize():");
+    println!("   Testing invalid token rejection with User::decode_token():");
     for (name, token) in invalid_tokens {
-        let result = User::detokenize(token);
+        let result = User::decode_token(token);
         println!("      {}: {:?}", name, if result.is_err() { "Error" } else { "OK" });
         assert!(result.is_err());
     }
@@ -536,24 +536,24 @@ async fn main() -> tideorm::Result<()> {
     println!();
     
     // ========================================================================
-    // STEP 11: Batch Operations using model.tokenize()
+    // STEP 11: Batch Operations using model.to_token()
     // ========================================================================
     print_section("11. Batch Tokenization");
     
     let all_users = User::all().await?;
-    println!("   Tokenizing all {} users (using user.tokenize()):", all_users.len());
+    println!("   Tokenizing all {} users (using user.to_token()):", all_users.len());
     
     for user in &all_users {
-        let token = user.tokenize()?;
+        let token = user.to_token()?;
         println!("      {} -> {}", user.name, token);
     }
     println!();
     
     let all_products = Product::all().await?;
-    println!("   Tokenizing all {} products (using product.tokenize()):", all_products.len());
+    println!("   Tokenizing all {} products (using product.to_token()):", all_products.len());
     
     for product in &all_products {
-        let token = product.tokenize()?;
+        let token = product.to_token()?;
         println!("      {} -> {}", product.name, token);
     }
     println!();
@@ -566,15 +566,15 @@ async fn main() -> tideorm::Result<()> {
     println!("   Verifying tokens are consistent:");
     
     // Tokens are deterministic (same input = same output)
-    let token_a = user1.tokenize()?;
-    let token_b = user1.tokenize()?;
+    let token_a = user1.to_token()?;
+    let token_b = user1.to_token()?;
     
-    println!("      Token A (user1.tokenize()): {}", token_a);
-    println!("      Token B (user1.tokenize()): {}", token_b);
+    println!("      Token A (user1.to_token()): {}", token_a);
+    println!("      Token B (user1.to_token()): {}", token_b);
     println!("      Tokens are same: {}", token_a == token_b);
     
-    let decoded_a = User::detokenize(&token_a)?;
-    let decoded_b = User::detokenize(&token_b)?;
+    let decoded_a = User::decode_token(&token_a)?;
+    let decoded_b = User::decode_token(&token_b)?;
     
     println!("      Both decode to same ID: {}", decoded_a == decoded_b);
     assert_eq!(decoded_a, decoded_b);
@@ -612,11 +612,11 @@ async fn main() -> tideorm::Result<()> {
     
     // Create a user to delete
     let temp_user = User::create(User::new("temp@example.com", "Temporary User")).await?;
-    let temp_token = temp_user.tokenize()?;
+    let temp_token = temp_user.to_token()?;
     
     println!("   Created temporary user:");
     println!("      ID: {}", temp_user.id);
-    println!("      Token (temp_user.tokenize()): {}", temp_token);
+    println!("      Token (temp_user.to_token()): {}", temp_token);
     
     // Delete via token using from_token()
     let user_to_delete = User::from_token(&temp_token).await?;
@@ -637,13 +637,13 @@ async fn main() -> tideorm::Result<()> {
     println!("   Model Methods Available:");
     println!();
     println!("   Instance Methods:");
-    println!("      user.tokenize()          -> Result<String>");
+    println!("      user.to_token()          -> Result<String>");
     println!("      user.to_token()          -> Result<String> (alias)");
-    println!("      user.regenerate_token()  -> Result<String>");
+    println!("      user.to_token()  -> Result<String>");
     println!();
     println!("   Static Methods:");
     println!("      User::tokenize_id(42)    -> Result<String>");
-    println!("      User::detokenize(&token) -> Result<i64>");
+    println!("      User::decode_token(&token) -> Result<i64>");
     println!("      User::decode_token(&token) -> Result<i64> (alias)");
     println!("      User::from_token(&token) -> Result<User> (async)");
     println!();

@@ -295,7 +295,6 @@ fn _demo_schema_config() {
     // Check database type for schema generation
     if let Some(db_type) = TideConfig::get_database_type() {
         println!("Database type: {}", db_type);
-        println!("  - Supports JSON: {}", db_type.supports_json());
         println!("  - Supports Arrays: {}", db_type.supports_arrays());
         println!("  - Quote character: {}", db_type.quote_char());
     }

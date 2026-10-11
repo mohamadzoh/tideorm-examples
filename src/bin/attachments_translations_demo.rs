@@ -321,10 +321,7 @@ async fn async_example() -> tideorm::Result<()> {
     // let mut product = Product { ... };
     // product.set_translation("name", "ar", "اسم عربي")?;
     // product.attach("thumbnail", "uploads/thumb.jpg")?;
-    // let thumb_url = Config::generate_file_url(
-    //     "thumbnail",
-    //     product.get_file("thumbnail")?.as_ref().unwrap(),
-    // );
+    // let thumb_url = product.get_file("thumbnail")?.unwrap().url("thumbnail");
     // let product = product.save().await?;
     // 
     // if let Some(found) = Product::find(product.id).await? {

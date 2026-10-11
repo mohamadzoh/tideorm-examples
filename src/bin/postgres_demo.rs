@@ -40,13 +40,12 @@ use std::collections::HashMap;
 /// User model - demonstrates basic CRUD operations
 /// 
 /// Configuration attributes:
-/// - hidden: password (if present) and deleted_at won't appear in JSON
 /// - searchable: name and email fields for full-text search
 /// 
 /// Index macros (separate from #[tide]):
 /// - #[index("email")] - for fast lookups
 /// - #[unique_index("email")] - enforce uniqueness
-#[tideorm::model(table = "users", hidden = "password,deleted_at", searchable = "name,email")]
+#[tideorm::model(table = "users", searchable = "name,email")]
 #[index("email")]
 #[index("status")]
 #[unique_index("email")]
@@ -489,8 +488,13 @@ async fn main() -> tideorm::Result<()> {
     let post4 = <Post as tideorm::SoftDelete>::soft_delete(post4).await?;
     println!("   After soft delete: is_deleted = {}", post4.is_deleted());
     
-    // Restore the post
-    let post4 = Post::find_or_fail(post4.id).await?;
+    // Restore the post: `find` leaves a trashed row out, and a query that
+    // includes the trash reads it by key.
+    let post4 = Post::query()
+        .with_trashed()
+        .find(post4.id)
+        .await?
+        .expect("a trashed post is loadable by id with with_trashed()");
     let post4 = <Post as tideorm::SoftDelete>::restore(post4).await?;
     println!("   After restore: is_deleted = {}", post4.is_deleted());
     

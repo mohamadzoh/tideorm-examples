@@ -9,7 +9,7 @@
 //! - Creating tables with various column types
 //! - Adding indexes and unique constraints
 //! - Altering tables (add/drop/rename columns)
-//! - Dropping tables
+//! - Renaming and dropping tables
 //! - Migration rollback
 //! - Migration status tracking
 //! - Two ways to run migrations:
@@ -301,6 +301,33 @@ impl Migration for AddFullTextSearchToPosts {
 }
 
 // ============================================================================
+// MIGRATION 7: Rename a Table
+// ============================================================================
+
+#[derive(Default)]
+struct RenamePostCategoriesTable;
+
+#[async_trait]
+impl Migration for RenamePostCategoriesTable {
+    fn version(&self) -> &str {
+        "20260106_007"
+    }
+
+    fn name(&self) -> &str {
+        "rename_post_categories_table"
+    }
+
+    async fn up(&self, schema: &mut Schema) -> tideorm::Result<()> {
+        // Rows, columns and indexes move with the table.
+        schema.rename_table("post_categories", "category_posts").await
+    }
+
+    async fn down(&self, schema: &mut Schema) -> tideorm::Result<()> {
+        schema.rename_table("category_posts", "post_categories").await
+    }
+}
+
+// ============================================================================
 // MAIN FUNCTION
 // ============================================================================
 
@@ -324,11 +351,10 @@ async fn main() -> tideorm::Result<()> {
     // ```rust
     // TideConfig::init()
     //     .database(&database_url)
-    //     // Add migrations individually
     //     .migration(CreateUsersTable)
     //     .migration(CreatePostsTable)
-    //     // Or add multiple via tuple (requires Default trait)
-    //     .migrations::<(CreateCommentsTable, AddProfileFieldsToUsers)>()
+    //     .migration(CreateCommentsTable)
+    //     .migration(AddProfileFieldsToUsers)
     //     // Enable automatic migration execution
     //     .run_migrations(true)
     //     .connect()
@@ -350,6 +376,7 @@ async fn main() -> tideorm::Result<()> {
     // Clean up existing tables for demo purposes
     println!("🧹 Cleaning up existing tables...\n");
     let _ = Database::execute("DROP TABLE IF EXISTS post_categories CASCADE").await;
+    let _ = Database::execute("DROP TABLE IF EXISTS category_posts CASCADE").await;
     let _ = Database::execute("DROP TABLE IF EXISTS comments CASCADE").await;
     let _ = Database::execute("DROP TABLE IF EXISTS posts CASCADE").await;
     let _ = Database::execute("DROP TABLE IF EXISTS users CASCADE").await;
@@ -364,7 +391,8 @@ async fn main() -> tideorm::Result<()> {
         .add(CreateCommentsTable)
         .add(AddProfileFieldsToUsers)
         .add(CreateCategoriesTable)
-        .add(AddFullTextSearchToPosts);
+        .add(AddFullTextSearchToPosts)
+        .add(RenamePostCategoriesTable);
 
     // Check migration status
     println!("📋 Migration Status (before):");

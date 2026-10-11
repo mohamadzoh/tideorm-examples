@@ -3,6 +3,7 @@
 //! This example demonstrates:
 //! - `changed_fields()` on loaded and modified models
 //! - `original_value()` before and after `update()`
+//!   (both answer `None` when there is no baseline to compare against)
 //! - the shared baseline behavior when multiple in-memory copies represent the same row
 //!
 //! Run with:
@@ -60,10 +61,10 @@ async fn main() -> tideorm::Result<()> {
     let mut loaded = TrackedUser::find(seeded.id)
         .await?
         .expect("seeded model should exist");
-    assert!(loaded.changed_fields()?.is_empty());
+    assert_eq!(loaded.changed_fields()?, Some(vec![]));
     assert_eq!(
         loaded.original_value("name")?,
-        Some(json!("Alice Original"))
+        Some(Some(json!("Alice Original")))
     );
     println!(
         "changed fields after find(): {:?}",
@@ -76,10 +77,10 @@ async fn main() -> tideorm::Result<()> {
 
     section("2. Unsaved edits expose changed fields and original values");
     loaded.name = "Alice Pending".to_string();
-    assert_eq!(loaded.changed_fields()?, vec!["name"]);
+    assert_eq!(loaded.changed_fields()?, Some(vec!["name"]));
     assert_eq!(
         loaded.original_value("name")?,
-        Some(json!("Alice Original"))
+        Some(Some(json!("Alice Original")))
     );
     println!("changed fields after edit: {:?}", loaded.changed_fields()?);
     println!(
@@ -89,10 +90,10 @@ async fn main() -> tideorm::Result<()> {
 
     section("3. update() refreshes the dirty-tracking baseline");
     let updated = loaded.update().await?;
-    assert!(updated.changed_fields()?.is_empty());
+    assert_eq!(updated.changed_fields()?, Some(vec![]));
     assert_eq!(
         updated.original_value("name")?,
-        Some(json!("Alice Pending"))
+        Some(Some(json!("Alice Pending")))
     );
     println!(
         "changed fields after update(): {:?}",
@@ -113,11 +114,11 @@ async fn main() -> tideorm::Result<()> {
 
     first.name = "Bob Persisted".to_string();
     let first = first.update().await?;
-    assert_eq!(first.original_value("name")?, Some(json!("Bob Persisted")));
+    assert_eq!(first.original_value("name")?, Some(Some(json!("Bob Persisted"))));
 
     second.name = "Charlie Local".to_string();
-    assert_eq!(second.changed_fields()?, vec!["name"]);
-    assert_eq!(second.original_value("name")?, Some(json!("Bob Persisted")));
+    assert_eq!(second.changed_fields()?, Some(vec!["name"]));
+    assert_eq!(second.original_value("name")?, Some(Some(json!("Bob Persisted"))));
     println!("latest persisted name: {:?}", first.original_value("name")?);
     println!("stale copy changed fields: {:?}", second.changed_fields()?);
     println!(

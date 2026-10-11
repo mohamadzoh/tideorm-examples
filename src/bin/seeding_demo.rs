@@ -198,20 +198,13 @@ fn main() {
 
     println!("1. Registering seeds via TideConfig:\n");
     
-    println!("   // Seeds are registered as a tuple in TideConfig");
-    println!("   TideConfig::init()");
-    println!("       .database(\"postgres://localhost/myapp\")");
-    println!("       .seeds::<(AdminUserSeeder, CategorySeeder, ProductSeeder, DevDataSeeder)>()");
-    println!("       .run_seeds(true)  // Enable automatic seeding on connect");
-    println!("       .connect()");
-    println!("       .await?;");
-    
-    println!("\n   Or manually add individual seeds:");
     println!("   TideConfig::init()");
     println!("       .database(\"postgres://localhost/myapp\")");
     println!("       .seed(AdminUserSeeder)");
     println!("       .seed(CategorySeeder)");
-    println!("       .run_seeds(true)");
+    println!("       .seed(ProductSeeder)");
+    println!("       .seed(DevDataSeeder)");
+    println!("       .run_seeds(true)  // Enable automatic seeding on connect");
     println!("       .connect()");
     println!("       .await?;");
     
@@ -328,7 +321,7 @@ fn main() {
     println!("\n=== Demo Complete ===");
     println!("\nTo use in a real application:");
     println!("1. Define your Seed implementations with #[derive(Default)]");
-    println!("2. Register seeds via TideConfig::init().seeds::<(Seed1, Seed2)>()");
+    println!("2. Register seeds via TideConfig::init().seed(Seed1).seed(Seed2)");
     println!("3. Set .run_seeds(true) to auto-run on connect");
     println!("4. Or use Seeder::new().add(seed).run().await? for manual control");
     println!("5. Seeds are tracked in _seeds table - won't run twice!");

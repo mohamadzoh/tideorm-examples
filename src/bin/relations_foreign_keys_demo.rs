@@ -3,7 +3,8 @@
 //! This example provides a compact, runnable showcase for:
 //! - `has_one`, `has_many`, and `belongs_to` relation fields
 //! - relation loading with `load`, `exists`, `count`, and `load_with`
-//! - relation query helpers like `has_any_related` and `has_related`
+//! - relation query helpers like `has_any_related`, `has_related` and `has_no_related`
+//! - `right_join`, `right_join_as` and `left_join_as` (one table joined twice)
 //! - foreign-key enforcement on SQLite
 //!
 //! Run with:
@@ -213,7 +214,69 @@ async fn main() -> tideorm::Result<()> {
         .await?;
     println!("authors without articles: {}", authors_without_articles.len());
 
-    section("4. Foreign-key enforcement");
+    // No published article: Bob has none at all, Alice has a published one.
+    let authors_without_published_articles = Author::query()
+        .has_no_related("articles", "author_id", "id", "published", true)
+        .get()
+        .await?;
+    println!(
+        "authors without published articles: {:?}",
+        authors_without_published_articles
+            .iter()
+            .map(|author| author.name.as_str())
+            .collect::<Vec<_>>()
+    );
+
+    section("4. Joins");
+    // A RIGHT JOIN keeps every author, with or without articles. Read it with
+    // get_json(): an author without articles has NULL article columns.
+    let authors_and_titles = Article::query()
+        .right_join("authors", "articles.author_id", "authors.id")
+        .select_raw("authors.name AS author")
+        .select_raw("articles.title AS title")
+        .order_by("authors.id", Order::Asc)
+        .get_json()
+        .await?;
+    for row in &authors_and_titles {
+        println!(
+            "right_join: {} -> {}",
+            row["author"].as_str().unwrap_or("?"),
+            row["title"].as_str().unwrap_or("(no articles)")
+        );
+    }
+
+    // The same join with the authors table aliased.
+    let aliased = Article::query()
+        .right_join_as("authors", "writer", "articles.author_id", "writer.id")
+        .select_raw("writer.email AS email")
+        .select_raw("COUNT(articles.id) AS articles")
+        .group_by("writer.email")
+        .order_by("writer.email", Order::Asc)
+        .get_json()
+        .await?;
+    for row in &aliased {
+        println!("right_join_as: {} wrote {}", row["email"].as_str().unwrap_or("?"), row["articles"]);
+    }
+
+    // Aliases let one table join twice: a comment's commenter and the writer
+    // of the article it is on are both authors.
+    let comment_people = Comment::query()
+        .inner_join("articles", "comments.article_id", "articles.id")
+        .left_join_as("authors", "commenter", "comments.author_id", "commenter.id")
+        .left_join_as("authors", "writer", "articles.author_id", "writer.id")
+        .select_raw("commenter.name AS commenter")
+        .select_raw("writer.name AS writer")
+        .get_json()
+        .await?;
+    for row in &comment_people {
+        println!(
+            "left_join_as: {} commented on {}'s article",
+            row["commenter"].as_str().unwrap_or("?"),
+            row["writer"].as_str().unwrap_or("?")
+        );
+    }
+
+    section("5. Foreign-key enforcement");
     let invalid_article = Article::new(999_999, "Should fail", true);
     match invalid_article.save().await {
         Ok(record) => println!("success: article {} saved", record.id),

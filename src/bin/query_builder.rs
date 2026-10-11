@@ -266,11 +266,11 @@ async fn run_examples() -> tideorm::Result<()> {
         .await?;
     println!("Page 1 (3 per page): {} items", page_1.len());
     
-    // skip/take (alias for offset/limit)
+    // offset/limit
     let skipped = Product::query()
         .order_by("price", tideorm::query::Order::Asc)
-        .skip(2)
-        .take(2)
+        .offset(2)
+        .limit(2)
         .get()
         .await?;
     println!("Skip 2, take 2: {} items", skipped.len());
@@ -395,9 +395,6 @@ User::query()
     .page(3, 25)                  // Page 3, 25 per page
     .get()
     .await?;
-
-// Aliases
-User::query().take(10).skip(20)   // Same as limit(10).offset(20)
 
 EXECUTION METHODS
 ─────────────────

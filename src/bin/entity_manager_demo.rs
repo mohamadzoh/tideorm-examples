@@ -2,8 +2,7 @@
 //!
 //! This example demonstrates:
 //! - aggregate loading and persistence with `EntityManager::find`, `load`, and `save`
-//! - compatibility helpers such as `find_in_entity_manager`, `load_in_entity_manager`, and
-//!   `save_with_entity_manager`
+//! - adding a child to a loaded relation and saving the aggregate
 //! - managed lifecycle operations: `persist`, `find_managed`, `merge`, `remove`, `detach`, and
 //!   `flush`
 //!
@@ -171,29 +170,27 @@ async fn main() -> tideorm::Result<()> {
     assert_eq!(remaining_tasks, 1);
     println!("after removing a loaded child, database task count is {}", remaining_tasks);
 
-    section("3. Compatibility helpers");
-    let mut compatibility_user = DemoUser::find_in_entity_manager(user.id, &aggregate_manager)
+    section("3. Adding a child to a loaded relation");
+    let mut grown_user = aggregate_manager
+        .find::<DemoUser>(user.id)
         .await?
-        .expect("user should still be available through compatibility helper");
-    compatibility_user
-        .tasks
-        .load_in_entity_manager(&aggregate_manager)
-        .await?;
-    compatibility_user
+        .expect("user should still be available");
+    aggregate_manager.load(&mut grown_user.tasks).await?;
+    grown_user
         .tasks
         .as_mut()
-        .expect("tasks should be loaded in compatibility helper")
-        .push(DemoTask::new(0, "Exercise compatibility helpers", false));
+        .expect("tasks should be loaded")
+        .push(DemoTask::new(0, "Add a task to the loaded relation", false));
 
-    let compatibility_user = save_with_entity_manager(&compatibility_user, &aggregate_manager).await?;
-    let compatibility_tasks = compatibility_user
+    let grown_user = aggregate_manager.save(&grown_user).await?;
+    let grown_tasks = grown_user
         .tasks
         .get_cached()
-        .expect("tasks should stay loaded after compatibility save");
-    assert_eq!(compatibility_tasks.len(), 2);
+        .expect("tasks should stay loaded after the save");
+    assert_eq!(grown_tasks.len(), 2);
     println!(
-        "compatibility save kept {} loaded tasks in the aggregate cache",
-        compatibility_tasks.len()
+        "saving the aggregate kept {} loaded tasks in its cache",
+        grown_tasks.len()
     );
 
     section("4. Managed lifecycle operations");
