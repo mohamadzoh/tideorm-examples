@@ -497,8 +497,9 @@ async fn main() -> tideorm::Result<()> {
     println!("   Verifying all tokens are URL-safe (using User::tokenize_id()):");
     for id in test_ids {
         let token = User::tokenize_id(id)?;
+        // URL-unreserved characters (RFC 3986): TideORM 0.16 tokens start with `v2.`.
         let is_url_safe = token.chars().all(|c| {
-            c.is_ascii_alphanumeric() || c == '-' || c == '_'
+            c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.'
         });
         println!("      ID {:>20} -> {} chars, URL-safe: {}", id, token.len(), is_url_safe);
         assert!(is_url_safe);
