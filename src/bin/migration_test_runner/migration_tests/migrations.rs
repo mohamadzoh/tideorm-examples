@@ -141,7 +141,8 @@ impl Migration for AddDescriptionToProducts {
         schema
             .alter_table("test_products", |t| {
                 t.add_column("description", ColumnType::Text).nullable();
-                t.add_column("category", ColumnType::String).nullable();
+                t.add_column("category", ColumnType::String(StringLen::None))
+                    .nullable();
             })
             .await
     }

@@ -44,15 +44,17 @@ pub struct Note {
 async fn main() -> tideorm::Result<()> {
     println!("🪶 TideORM SQLite Demo\n");
 
-    // SQLite database file (creates if not exists)
-    let database_url = "sqlite://./demo.db?mode=rwc";
+    // SQLite database file (`mode=rwc` creates it if missing)
+    let _ = dotenvy::dotenv();
+    let database_url = std::env::var("SQLITE_DATABASE_URL")
+        .unwrap_or_else(|_| "sqlite://./demo.db?mode=rwc".to_string());
 
     println!("Connecting to SQLite...");
 
     // Initialize TideORM with SQLite
     TideConfig::init()
         .database_type(DatabaseType::SQLite)
-        .database(database_url)
+        .database(&database_url)
         .max_connections(5) // SQLite works best with fewer connections
         .min_connections(1)
         .sync(true) // Auto-sync schema
@@ -269,7 +271,7 @@ async fn main() -> tideorm::Result<()> {
     println!("Deleted test user\n");
 
     // Optionally remove the database file
-    println!("Note: SQLite database file 'demo.db' was created.");
+    println!("Note: SQLite database file '{}' was used.", database_url);
     println!("You can delete it manually if desired.\n");
 
     println!("✓ SQLite demo completed successfully!");

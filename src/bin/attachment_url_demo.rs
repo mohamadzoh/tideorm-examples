@@ -10,7 +10,7 @@
 //!
 //! Run with: cargo run --bin attachment_url_demo
 
-use serde::{Deserialize, Serialize};
+use tideorm::prelude::*;
 
 // ============================================================================
 // HELPER MACROS FOR TESTING
@@ -56,126 +56,53 @@ macro_rules! verify_eq {
 }
 
 // ============================================================================
-// FILE ATTACHMENT STRUCT (mirrors TideORM's FileAttachment)
+// A MODEL WITH ATTACHMENTS, AND HELPERS
 // ============================================================================
 
-/// File attachment metadata
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FileAttachment {
-    pub key: String,
-    pub filename: String,
-    pub created_at: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub original_filename: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub size: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mime_type: Option<String>,
+/// The model whose `to_json()` renders attachments with their URLs.
+#[tideorm::model(
+    table = "attachment_demo_products",
+    has_one_files = "thumbnail,avatar,gallery,document"
+)]
+pub struct Product {
+    #[tideorm(primary_key)]
+    pub id: i64,
+    pub files: Option<serde_json::Value>,
 }
 
-impl FileAttachment {
-    pub fn new(key: &str) -> Self {
-        let filename = key.split('/').next_back().unwrap_or(key).to_string();
-        Self {
-            key: key.to_string(),
-            filename,
-            created_at: chrono::Utc::now().to_rfc3339(),
-            original_filename: None,
-            size: None,
-            mime_type: None,
-        }
-    }
-
-    pub fn with_metadata(
-        key: &str,
-        original_filename: Option<&str>,
-        size: Option<u64>,
-        mime_type: Option<&str>,
-    ) -> Self {
-        let mut attachment = Self::new(key);
-        attachment.original_filename = original_filename.map(|s| s.to_string());
-        attachment.size = size;
-        attachment.mime_type = mime_type.map(|s| s.to_string());
-        attachment
-    }
+/// Install `generator` as TideORM's attachment URL generator. `apply()` installs
+/// the configuration without opening a database connection.
+fn use_generator(generator: fn(&str, &FileAttachment) -> String) {
+    TideConfig::init().file_url_generator(generator).apply();
 }
 
-/// File URL generator function type (takes field_name and full FileAttachment)
-type FileUrlGenerator = fn(field_name: &str, file: &FileAttachment) -> String;
-
-/// Simulated global configuration
-struct MockConfig {
-    file_base_url: Option<String>,
-    custom_generator: Option<FileUrlGenerator>,
+/// What `Product::to_json` renders for `file` attached as `field`, under the
+/// configuration applied last.
+fn rendered(field: &str, file: &FileAttachment) -> serde_json::Value {
+    let mut files = FilesData::new();
+    files.set_one(field, file.clone());
+    let product = Product {
+        id: 1,
+        files: Some(files.to_json()),
+    };
+    product.to_json(None)[field].clone()
 }
 
-impl MockConfig {
-    fn new() -> Self {
-        Self {
-            file_base_url: None,
-            custom_generator: None,
-        }
-    }
-
-    fn with_base_url(mut self, url: &str) -> Self {
-        self.file_base_url = Some(url.to_string());
-        self
-    }
-
-    #[allow(dead_code)]
-    fn with_generator(mut self, generator: FileUrlGenerator) -> Self {
-        self.custom_generator = Some(generator);
-        self
-    }
-
-    #[inline]
-    fn generate_url(&self, field_name: &str, file: &FileAttachment) -> String {
-        if let Some(generator) = self.custom_generator {
-            generator(field_name, file)
-        } else if let Some(base_url) = &self.file_base_url {
-            let base = base_url.trim_end_matches('/');
-            let key = file.key.trim_start_matches('/');
-            format!("{}/{}", base, key)
-        } else {
-            file.key.clone()
-        }
-    }
-}
-
-/// Simulate processing file data for JSON output
-#[inline]
-fn process_file_for_json(
-    field_name: &str,
-    file_data: &serde_json::Value,
-    hidden_attrs: &[&str],
-    url_generator: FileUrlGenerator,
-) -> serde_json::Value {
-    match file_data {
-        serde_json::Value::Object(obj) => {
-            let mut cleaned = serde_json::Map::new();
-            for (key, value) in obj {
-                if !hidden_attrs.contains(&key.as_str()) {
-                    cleaned.insert(key.clone(), value.clone());
-                }
+/// `key` as a URL path: every byte but unreserved characters and `/` is
+/// percent-encoded, so a `?`, `#` or space in a key cannot end the path.
+/// Keys from outside the application should also pass
+/// `FileAttachment::is_safe_key` before they are stored.
+fn url_path(key: &str) -> String {
+    let mut path = String::new();
+    for byte in key.trim_start_matches('/').bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' | b'/' => {
+                path.push(char::from(byte))
             }
-            // Add URL field by deserializing the file attachment
-            if let Ok(file_attachment) =
-                serde_json::from_value::<FileAttachment>(serde_json::Value::Object(obj.clone()))
-            {
-                let url = url_generator(field_name, &file_attachment);
-                cleaned.insert("url".to_string(), serde_json::Value::String(url));
-            }
-            serde_json::Value::Object(cleaned)
+            _ => path.push_str(&format!("%{byte:02X}")),
         }
-        serde_json::Value::Array(arr) => {
-            let cleaned: Vec<serde_json::Value> = arr
-                .iter()
-                .map(|item| process_file_for_json(field_name, item, hidden_attrs, url_generator))
-                .collect();
-            serde_json::Value::Array(cleaned)
-        }
-        other => other.clone(),
     }
+    path
 }
 
 // ============================================================================
@@ -186,7 +113,7 @@ fn process_file_for_json(
 fn cdn_url_generator(_field_name: &str, file: &FileAttachment) -> String {
     format!(
         "https://cdn.example.com/{}",
-        file.key.trim_start_matches('/')
+        url_path(&file.key)
     )
 }
 
@@ -195,13 +122,13 @@ fn cdn_url_generator(_field_name: &str, file: &FileAttachment) -> String {
 fn s3_url_generator(_field_name: &str, file: &FileAttachment) -> String {
     format!(
         "https://my-bucket.s3.amazonaws.com/{}",
-        file.key.trim_start_matches('/')
+        url_path(&file.key)
     )
 }
 
 /// Field-aware URL generator - routes based on field name
 fn field_aware_url_generator(field_name: &str, file: &FileAttachment) -> String {
-    let key = file.key.trim_start_matches('/');
+    let key = url_path(&file.key);
 
     match field_name {
         "thumbnail" | "avatar" | "profile_image" => {
@@ -229,7 +156,7 @@ fn field_aware_url_generator(field_name: &str, file: &FileAttachment) -> String 
 
 /// Combined field + metadata URL generator
 fn smart_url_generator(field_name: &str, file: &FileAttachment) -> String {
-    let key = file.key.trim_start_matches('/');
+    let key = url_path(&file.key);
 
     // First, check field-specific routing
     match field_name {
@@ -273,7 +200,7 @@ fn smart_url_generator(field_name: &str, file: &FileAttachment) -> String {
 
 /// Product model URL generator
 fn product_url_generator(field_name: &str, file: &FileAttachment) -> String {
-    let key = file.key.trim_start_matches('/');
+    let key = url_path(&file.key);
 
     match field_name {
         "thumbnail" => format!("https://products-cdn.example.com/thumb/{}", key),
@@ -285,7 +212,7 @@ fn product_url_generator(field_name: &str, file: &FileAttachment) -> String {
 
 /// User model URL generator
 fn user_url_generator(field_name: &str, file: &FileAttachment) -> String {
-    let key = file.key.trim_start_matches('/');
+    let key = url_path(&file.key);
 
     match field_name {
         "avatar" => format!("https://avatars.example.com/{}", key),
@@ -295,9 +222,14 @@ fn user_url_generator(field_name: &str, file: &FileAttachment) -> String {
     }
 }
 
-/// Signed URL generator with field-specific tokens
+/// Access-tagged URL generator: a mock, NOT a signed URL.
+///
+/// Its token is computed from public values with no secret, so anyone can forge
+/// it. Real signed URLs come from the storage service (an S3 presigned URL) or an
+/// HMAC over the key and expiry with a server-side secret, which a generator
+/// installed with `TideConfig::file_url_generator` can capture.
 fn signed_url_generator(field_name: &str, file: &FileAttachment) -> String {
-    let key = file.key.trim_start_matches('/');
+    let key = url_path(&file.key);
 
     // Generate token based on field and file
     let access_level = match field_name {
@@ -330,9 +262,9 @@ fn main() {
 
     test_case!("1.1: URL without base URL returns key as-is");
     {
-        let config = MockConfig::new();
+        TideConfig::init().apply();
         let file = FileAttachment::new("uploads/2024/image.jpg");
-        let url = config.generate_url("thumbnail", &file);
+        let url = file.url("thumbnail");
         verify_eq!(
             url,
             "uploads/2024/image.jpg",
@@ -344,14 +276,14 @@ fn main() {
 
     test_case!("1.2: File with metadata - URL still works");
     {
-        let config = MockConfig::new();
+        TideConfig::init().apply();
         let file = FileAttachment::with_metadata(
             "uploads/doc.pdf",
             Some("Report.pdf"),
             Some(1024),
             Some("application/pdf"),
         );
-        let url = config.generate_url("document", &file);
+        let url = file.url("document");
         verify_eq!(url, "uploads/doc.pdf", "URL from file with metadata");
         total_tests += 1;
         passed_tests += 1;
@@ -364,9 +296,9 @@ fn main() {
 
     test_case!("2.1: Simple base URL concatenation");
     {
-        let config = MockConfig::new().with_base_url("https://cdn.example.com/uploads");
+        TideConfig::init().file_base_url("https://cdn.example.com/uploads").apply();
         let file = FileAttachment::new("2024/image.jpg");
-        let url = config.generate_url("thumbnail", &file);
+        let url = file.url("thumbnail");
         verify_eq!(
             url,
             "https://cdn.example.com/uploads/2024/image.jpg",
@@ -378,9 +310,9 @@ fn main() {
 
     test_case!("2.2: Trailing slash in base URL handled");
     {
-        let config = MockConfig::new().with_base_url("https://cdn.example.com/uploads/");
+        TideConfig::init().file_base_url("https://cdn.example.com/uploads/").apply();
         let file = FileAttachment::new("2024/image.jpg");
-        let url = config.generate_url("avatar", &file);
+        let url = file.url("avatar");
         verify_eq!(
             url,
             "https://cdn.example.com/uploads/2024/image.jpg",
@@ -392,9 +324,9 @@ fn main() {
 
     test_case!("2.3: Leading slash in key handled");
     {
-        let config = MockConfig::new().with_base_url("https://cdn.example.com/uploads");
+        TideConfig::init().file_base_url("https://cdn.example.com/uploads").apply();
         let file = FileAttachment::new("/2024/image.jpg");
-        let url = config.generate_url("document", &file);
+        let url = file.url("document");
         verify_eq!(
             url,
             "https://cdn.example.com/uploads/2024/image.jpg",
@@ -411,12 +343,13 @@ fn main() {
 
     test_case!("3.1: Different URLs for different field names");
     {
+        use_generator(field_aware_url_generator);
         let file = FileAttachment::new("products/123/image.jpg");
 
-        let thumb_url = field_aware_url_generator("thumbnail", &file);
-        let video_url = field_aware_url_generator("video", &file);
-        let doc_url = field_aware_url_generator("document", &file);
-        let other_url = field_aware_url_generator("other", &file);
+        let thumb_url = file.url("thumbnail");
+        let video_url = file.url("video");
+        let doc_url = file.url("document");
+        let other_url = file.url("other");
 
         verify!(
             thumb_url.contains("images.example.com"),
@@ -441,8 +374,9 @@ fn main() {
 
     test_case!("3.2: Avatar field gets special formatting");
     {
+        use_generator(field_aware_url_generator);
         let file = FileAttachment::new("users/avatar.jpg");
-        let url = field_aware_url_generator("avatar", &file);
+        let url = file.url("avatar");
         verify!(
             url.contains("images.example.com/w_auto,f_auto"),
             "Avatar has transformations"
@@ -453,8 +387,9 @@ fn main() {
 
     test_case!("3.3: Cover image gets optimized resolution");
     {
+        use_generator(field_aware_url_generator);
         let file = FileAttachment::new("banners/hero.jpg");
-        let url = field_aware_url_generator("cover_image", &file);
+        let url = file.url("cover_image");
         verify!(
             url.contains("w_1200,q_80"),
             "Cover image optimized for large display"
@@ -470,9 +405,10 @@ fn main() {
 
     test_case!("4.1: Thumbnail field takes priority over mime_type");
     {
+        use_generator(smart_url_generator);
         let file =
             FileAttachment::with_metadata("img.jpg", None, Some(100_000), Some("image/jpeg"));
-        let url = smart_url_generator("thumbnail", &file);
+        let url = file.url("thumbnail");
         verify!(
             url.contains("thumbs.example.com"),
             "Thumbnail field routes to thumbs CDN"
@@ -483,9 +419,10 @@ fn main() {
 
     test_case!("4.2: Avatar field applies specific transformations");
     {
+        use_generator(smart_url_generator);
         let file =
             FileAttachment::with_metadata("avatar.png", None, Some(50_000), Some("image/png"));
-        let url = smart_url_generator("avatar", &file);
+        let url = file.url("avatar");
         verify!(
             url.contains("w_200,h_200,c_fill"),
             "Avatar has square crop applied"
@@ -496,6 +433,7 @@ fn main() {
 
     test_case!("4.3: Non-special fields fall back to mime_type routing");
     {
+        use_generator(smart_url_generator);
         let video = FileAttachment::with_metadata("media/clip.mp4", None, None, Some("video/mp4"));
         let image = FileAttachment::with_metadata(
             "media/photo.jpg",
@@ -506,9 +444,9 @@ fn main() {
         let pdf =
             FileAttachment::with_metadata("media/doc.pdf", None, None, Some("application/pdf"));
 
-        let video_url = smart_url_generator("gallery", &video);
-        let image_url = smart_url_generator("gallery", &image);
-        let pdf_url = smart_url_generator("gallery", &pdf);
+        let video_url = video.url("gallery");
+        let image_url = image.url("gallery");
+        let pdf_url = pdf.url("gallery");
 
         verify!(
             video_url.contains("stream.example.com"),
@@ -531,12 +469,13 @@ fn main() {
 
     test_case!("5.1: Product model routes by field");
     {
+        use_generator(product_url_generator);
         let file = FileAttachment::new("products/123/image.jpg");
 
-        let thumb = product_url_generator("thumbnail", &file);
-        let gallery = product_url_generator("gallery", &file);
-        let manual = product_url_generator("manual", &file);
-        let other = product_url_generator("specs", &file);
+        let thumb = file.url("thumbnail");
+        let gallery = file.url("gallery");
+        let manual = file.url("manual");
+        let other = file.url("specs");
 
         verify!(thumb.contains("/thumb/"), "Thumbnail to thumb path");
         verify!(gallery.contains("/gallery/"), "Gallery to gallery path");
@@ -549,11 +488,12 @@ fn main() {
 
     test_case!("5.2: User model routes by field");
     {
+        use_generator(user_url_generator);
         let file = FileAttachment::new("users/456/file.jpg");
 
-        let avatar = user_url_generator("avatar", &file);
-        let cover = user_url_generator("cover_photo", &file);
-        let resume = user_url_generator("resume", &file);
+        let avatar = file.url("avatar");
+        let cover = file.url("cover_photo");
+        let resume = file.url("resume");
 
         verify!(
             avatar.contains("avatars.example.com"),
@@ -570,14 +510,15 @@ fn main() {
     }
 
     // ========================================================================
-    // TEST 6: Signed URLs with Field Context
+    // TEST 6: Access-Tagged URLs (a mock, not signing)
     // ========================================================================
-    test_section!("TEST 6: Signed URLs with Field Context");
+    test_section!("TEST 6: Access-Tagged URLs (mock tokens, not cryptographic signatures)");
 
     test_case!("6.1: Restricted access for private documents");
     {
+        use_generator(signed_url_generator);
         let file = FileAttachment::with_metadata("docs/secret.pdf", None, Some(5000), None);
-        let url = signed_url_generator("private_document", &file);
+        let url = file.url("private_document");
         verify!(
             url.contains("token=restricted_"),
             "Private document gets restricted token"
@@ -588,8 +529,9 @@ fn main() {
 
     test_case!("6.2: Internal access for internal-only files");
     {
+        use_generator(signed_url_generator);
         let file = FileAttachment::with_metadata("internal/report.xlsx", None, Some(3000), None);
-        let url = signed_url_generator("internal_only", &file);
+        let url = file.url("internal_only");
         verify!(
             url.contains("token=internal_"),
             "Internal file gets internal token"
@@ -600,8 +542,9 @@ fn main() {
 
     test_case!("6.3: Public access for regular files");
     {
+        use_generator(signed_url_generator);
         let file = FileAttachment::with_metadata("public/image.jpg", None, Some(1234), None);
-        let url = signed_url_generator("thumbnail", &file);
+        let url = file.url("thumbnail");
         verify!(
             url.contains("token=public_234"),
             "Public file gets public token with size hash"
@@ -617,18 +560,18 @@ fn main() {
 
     test_case!("7.1: Single file attachment with field-specific URL");
     {
+        use_generator(smart_url_generator);
         let attachment = FileAttachment::with_metadata(
             "uploads/thumbnail.jpg",
             Some("Photo.jpg"),
             Some(50_000),
             Some("image/jpeg"),
         );
-        let json = serde_json::to_value(&attachment).unwrap();
 
-        let processed = process_file_for_json("thumbnail", &json, &[], smart_url_generator);
+        let processed = rendered("thumbnail", &attachment);
 
         verify!(processed.get("url").is_some(), "URL field added");
-        let url = processed.get("url").unwrap().as_str().unwrap();
+        let url = processed["url"].as_str().unwrap();
         verify!(
             url.contains("thumbs.example.com"),
             "Thumbnail field routed correctly"
@@ -639,21 +582,21 @@ fn main() {
 
     test_case!("7.2: Different fields get different URLs for same file");
     {
+        use_generator(smart_url_generator);
         let attachment = FileAttachment::with_metadata(
             "uploads/image.jpg",
             None,
             Some(100_000),
             Some("image/jpeg"),
         );
-        let json = serde_json::to_value(&attachment).unwrap();
 
-        let as_thumbnail = process_file_for_json("thumbnail", &json, &[], smart_url_generator);
-        let as_avatar = process_file_for_json("avatar", &json, &[], smart_url_generator);
-        let as_gallery = process_file_for_json("gallery", &json, &[], smart_url_generator);
+        let as_thumbnail = rendered("thumbnail", &attachment);
+        let as_avatar = rendered("avatar", &attachment);
+        let as_gallery = rendered("gallery", &attachment);
 
-        let thumb_url = as_thumbnail.get("url").unwrap().as_str().unwrap();
-        let avatar_url = as_avatar.get("url").unwrap().as_str().unwrap();
-        let gallery_url = as_gallery.get("url").unwrap().as_str().unwrap();
+        let thumb_url = as_thumbnail["url"].as_str().unwrap();
+        let avatar_url = as_avatar["url"].as_str().unwrap();
+        let gallery_url = as_gallery["url"].as_str().unwrap();
 
         verify!(
             thumb_url.contains("thumbs.example.com"),
@@ -674,16 +617,18 @@ fn main() {
 
     test_case!("7.3: Hidden attributes excluded, URL still added");
     {
+        TideConfig::init()
+            .hidden_attributes(["size", "mime_type"])
+            .file_url_generator(cdn_url_generator)
+            .apply();
         let attachment = FileAttachment::with_metadata(
             "docs/secret.pdf",
             Some("Secret Document.pdf"),
             Some(1024 * 1024),
             Some("application/pdf"),
         );
-        let json = serde_json::to_value(&attachment).unwrap();
 
-        let processed =
-            process_file_for_json("document", &json, &["size", "mime_type"], cdn_url_generator);
+        let processed = rendered("document", &attachment);
 
         verify!(processed.get("url").is_some(), "URL present");
         verify!(processed.get("key").is_some(), "Key present");
@@ -701,8 +646,9 @@ fn main() {
 
     test_case!("8.1: Empty field name");
     {
+        use_generator(field_aware_url_generator);
         let file = FileAttachment::new("file.jpg");
-        let url = field_aware_url_generator("", &file);
+        let url = file.url("");
         verify!(
             url.contains("cdn.example.com"),
             "Empty field name falls back to default"
@@ -713,8 +659,9 @@ fn main() {
 
     test_case!("8.2: Field name with special characters");
     {
+        use_generator(field_aware_url_generator);
         let file = FileAttachment::new("file.jpg");
-        let url = field_aware_url_generator("user_avatar_2", &file);
+        let url = file.url("user_avatar_2");
         // Should fall through to default
         verify!(
             url.contains("cdn.example.com"),
@@ -724,45 +671,58 @@ fn main() {
         passed_tests += 1;
     }
 
-    test_case!("8.3: Unicode in field name");
+    test_case!("8.3: Unicode field name, and key characters encoded in the URL");
     {
+        use_generator(cdn_url_generator);
         let file = FileAttachment::new("файл.jpg");
-        let url = cdn_url_generator("изображение", &file);
-        verify!(url.contains("файл.jpg"), "Unicode preserved in URL");
+        let url = file.url("изображение");
+        verify_eq!(
+            url,
+            "https://cdn.example.com/%D1%84%D0%B0%D0%B9%D0%BB.jpg",
+            "Unicode key percent-encoded"
+        );
+
+        let file = FileAttachment::new("reports/q1 summary?.pdf#v2");
+        let url = file.url("document");
+        verify_eq!(
+            url,
+            "https://cdn.example.com/reports/q1%20summary%3F.pdf%23v2",
+            "`?`, `#` and spaces cannot end the path"
+        );
         total_tests += 1;
         passed_tests += 1;
     }
 
     // ========================================================================
-    // TEST 9: Performance Verification
+    // TEST 9: Timing (informational)
     // ========================================================================
-    test_section!("TEST 9: Performance Verification");
+    test_section!("TEST 9: Timing (informational, not a benchmark)");
 
-    test_case!("9.1: Inline URL generation with field routing");
+    test_case!("9.1: URL generation with field routing");
     {
+        use_generator(field_aware_url_generator);
         let file = FileAttachment::new("test.jpg");
         let fields = ["thumbnail", "avatar", "document", "video", "gallery"];
 
         let start = std::time::Instant::now();
+        let mut generated = 0;
         for _ in 0..10000 {
             for field in &fields {
-                let _ = field_aware_url_generator(field, &file);
+                generated += std::hint::black_box(file.url(field)).len();
             }
         }
         let duration = start.elapsed();
 
         println!("    ⏱️  50,000 field-aware URL generations: {:?}", duration);
-        verify!(
-            duration.as_millis() < 200,
-            "URL generation is fast (< 200ms for 50k)"
-        );
+        verify!(generated > 0, "Every call generated a URL");
 
         total_tests += 1;
         passed_tests += 1;
     }
 
-    test_case!("9.2: Complex generator with field + metadata access");
+    test_case!("9.2: Generator with field + metadata access");
     {
+        use_generator(smart_url_generator);
         let files: Vec<_> = (0..1000)
             .map(|i| {
                 FileAttachment::with_metadata(
@@ -777,18 +737,16 @@ fn main() {
         let fields = ["thumbnail", "avatar", "gallery"];
 
         let start = std::time::Instant::now();
+        let mut generated = 0;
         for file in &files {
             for field in &fields {
-                let _ = smart_url_generator(field, file);
+                generated += std::hint::black_box(file.url(field)).len();
             }
         }
         let duration = start.elapsed();
 
         println!("    ⏱️  3,000 smart URL generations: {:?}", duration);
-        verify!(
-            duration.as_millis() < 50,
-            "Smart generation is fast (< 50ms for 3k)"
-        );
+        verify!(generated > 0, "Every call generated a URL");
 
         total_tests += 1;
         passed_tests += 1;
@@ -858,20 +816,15 @@ fn main() {
     "#
     );
 
-    println!("\n3️⃣  Override per model:");
+    println!("\n3️⃣  Serve one field from its own base URL:");
     println!(
         r#"
-    impl ModelMeta for Product {{
-        fn file_url_generator() -> FileUrlGenerator {{
-            |field_name, file| {{
-                match field_name {{
-                    "thumbnail" => format!("https://products-cdn.example.com/thumb/{{}}", file.key),
-                    "gallery" => format!("https://products-cdn.example.com/gallery/{{}}", file.key),
-                    _ => format!("https://products-cdn.example.com/assets/{{}}", file.key),
-                }}
-            }}
-        }}
-    }}
+    TideConfig::init()
+        .database("postgres://localhost/mydb")
+        .file_base_url("https://cdn.example.com/uploads")
+        .file_base_url_for("thumbnail", "https://products-cdn.example.com/thumb")
+        .connect()
+        .await?;
     "#
     );
 

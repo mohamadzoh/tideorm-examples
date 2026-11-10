@@ -309,7 +309,7 @@ async fn async_example() -> tideorm::Result<()> {
     // Initialize database
     TideConfig::init()
         .database("postgres://localhost/myapp")
-        .languages(&["en", "ar", "fr"])
+        .languages(["en", "ar", "fr"])
         .fallback_language("en")
         .file_base_url("https://cdn.example.com/uploads")
         .file_base_url_for("thumbnail", "https://images.example.com/products/thumbnails")

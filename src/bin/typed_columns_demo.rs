@@ -1,6 +1,6 @@
-//! SeaORM Features Demo
+//! Typed Columns Demo
 //!
-//! This example demonstrates the new SeaORM features implemented in TideORM:
+//! This example demonstrates these TideORM features:
 //!
 //! 1. **Strongly-Typed Columns** - Compile-time type safety for queries
 //! 2. **Nested ActiveModel** - Cascade save operations for related models
@@ -9,7 +9,11 @@
 //! 5. **Linked Partial Select** - Select specific columns from related tables
 //! 6. **Eager Loading Builder** - Load related records in batches
 //!
-//! Run with: `cargo run --bin seaorm2_features_demo`
+//! The demo runs without a database. The calls that need one live in the
+//! `snippets` module at the end of this file, which the compiler checks; the
+//! demo prints them from this file's own source, so what it shows is real API.
+//!
+//! Run with: `cargo run --bin typed_columns_demo`
 
 use tideorm::columns::{ColumnEq, ColumnIn, ColumnLike, ColumnNullable, ColumnOrd};
 use tideorm::prelude::*;
@@ -18,20 +22,10 @@ use tideorm::prelude::*;
 // MODEL DEFINITIONS
 // =============================================================================
 
-// Note: These models would use #[tideorm::model(table = "...")] in a real application
-// For this demo, we show the structure and intended usage
+// Plain structs for the parts of the demo that run without a database; the
+// models are in `snippets`.
 
-/// Post model - belongs to User
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct Post {
-    id: i64,
-    user_id: i64,
-    title: String,
-    content: String,
-    published: bool,
-}
-
-/// Employee model - self-referencing (org chart)
+/// Employee row - self-referencing (org chart)
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct Employee {
     id: i64,
@@ -139,14 +133,8 @@ fn demo_strongly_typed_columns() {
     println!("     - NAME.eq(123)      ✗ COMPILE ERROR! String != i32");
     println!("     - ID.like(\"%a%\")   ✗ COMPILE ERROR! i64 has no .like()");
 
-    // Show how to use with QueryBuilder
-    println!("\n  Usage with QueryBuilder (pseudo-code):");
-    println!("    User::query()");
-    println!("        .where_col(NAME.eq(\"Alice\"))");
-    println!("        .where_col(AGE.gt(18))");
-    println!("        .where_col(ACTIVE.eq(true))");
-    println!("        .get()");
-    println!("        .await?;");
+    println!("\n  Usage with QueryBuilder (generated column constants):");
+    show("pub async fn typed_filters(");
 }
 
 // =============================================================================
@@ -155,63 +143,13 @@ fn demo_strongly_typed_columns() {
 
 fn demo_nested_active_model() {
     println!("\n=== NESTED ACTIVE MODEL (CASCADE SAVE) ===\n");
-    let posts = [
-        Post {
-            id: 0,
-            user_id: 0, // Will be set from user.id
-            title: "First Post".to_string(),
-            content: "Hello, World!".to_string(),
-            published: true,
-        },
-        Post {
-            id: 0,
-            user_id: 0,
-            title: "Second Post".to_string(),
-            content: "More content...".to_string(),
-            published: false,
-        },
-    ];
 
-    println!("NestedSave trait provides cascade save operations:\n");
+    println!("NestedSave saves a parent and its children in one transaction,");
+    println!("setting each child's foreign key to the parent's key:\n");
+    show("pub async fn nested_saves(");
 
-    println!("1. save_with_one() - Save parent with single related model:");
-    println!("   let (user, profile) = user.save_with_one(profile, \"user_id\").await?;");
-    println!("   // Both saved, profile.user_id = user.id\n");
-
-    println!("2. save_with_many() - Save parent with multiple related models:");
-    println!("   let (user, posts) = user.save_with_many(posts, \"user_id\").await?;");
-    println!("   // All posts saved with post.user_id = user.id\n");
-
-    println!("3. update_with_one() - Cascade updates:");
-    println!("   let (user, profile) = user.update_with_one(profile).await?;\n");
-
-    println!("4. update_with_many() - Cascade update multiple:");
-    println!("   let (user, posts) = user.update_with_many(posts).await?;\n");
-
-    println!("5. delete_with_many() - Cascade delete (children first):");
-    println!("   let deleted_count = user.delete_with_many(posts).await?;");
-    println!("   // Deletes posts first, then user\n");
-
-    println!("6. NestedSaveBuilder - Fluent API for complex nested saves:");
-    println!("   let (user, related_json) = NestedSaveBuilder::new(user)");
-    println!("       .with_one(profile, \"user_id\")");
-    println!("       .with_many(posts, \"user_id\")");
-    println!("       .save()");
-    println!("       .await?;");
-
-    // Demonstrate the JSON manipulation
-    println!("\n  Behind the scenes - Foreign key update:");
-    let mut post_json = serde_json::to_value(&posts[0]).unwrap();
-    println!(
-        "    Before: {}",
-        serde_json::to_string_pretty(&post_json).unwrap()
-    );
-
-    if let serde_json::Value::Object(ref mut map) = post_json {
-        map.insert("user_id".to_string(), serde_json::json!(42));
-    }
-    println!("    After setting user_id = 42:");
-    println!("    {}", serde_json::to_string_pretty(&post_json).unwrap());
+    println!("NestedSaveBuilder collects children of several models:\n");
+    show("pub async fn nested_builder(");
 }
 
 // =============================================================================
@@ -258,21 +196,7 @@ fn demo_self_referencing_relations() {
     println!("Self-referencing relationships (like org charts):\n");
 
     println!("Model definition:");
-    println!("  #[tideorm::model(table = \"employees\")]");
-    println!("  struct Employee {{");
-    println!("      #[tideorm(primary_key)]");
-    println!("      id: i64,");
-    println!("      name: String,");
-    println!("      manager_id: Option<i64>,");
-    println!("      ");
-    println!("      // Parent reference (manager)");
-    println!("      #[tideorm(self_ref = \"id\", foreign_key = \"manager_id\")]");
-    println!("      manager: SelfRef<Employee>,");
-    println!("      ");
-    println!("      // Children reference (direct reports)");
-    println!("      #[tideorm(self_ref_many = \"id\", foreign_key = \"manager_id\")]");
-    println!("      reports: SelfRefMany<Employee>,");
-    println!("  }}\n");
+    show("#[tideorm::model(table = \"employees\")]");
 
     println!("Sample Org Chart:");
     for emp in &employees {
@@ -286,31 +210,8 @@ fn demo_self_referencing_relations() {
         println!("  {}{} ({})", indent, emp.name, emp.title);
     }
 
-    println!("\nSelfRef<E> operations:");
-    println!("  let emp = Employee::find(5).await?;  // Developer");
-    println!("  ");
-    println!("  // Load the manager (parent)");
-    println!("  let manager = emp.manager.load().await?;");
-    println!("  // -> Tech Lead");
-    println!("  ");
-    println!("  // Check if has manager");
-    println!("  let has_manager = emp.manager.exists().await?;");
-    println!("  // -> true");
-
-    println!("\nSelfRefMany<E> operations:");
-    println!("  let vp = Employee::find(2).await?;  // VP Engineering");
-    println!("  ");
-    println!("  // Load direct reports");
-    println!("  let reports = vp.reports.load().await?;");
-    println!("  // -> [Tech Lead]");
-    println!("  ");
-    println!("  // Count direct reports");
-    println!("  let count = vp.reports.count().await?;");
-    println!("  // -> 1");
-    println!("  ");
-    println!("  // Load entire subtree (recursive)");
-    println!("  let tree = vp.reports.load_tree(3).await?;");
-    println!("  // -> [Tech Lead, Developer] (flattened)");
+    println!("\nSelfRef<E> and SelfRefMany<E> operations:");
+    show("pub async fn org_chart(");
 }
 
 // =============================================================================
@@ -419,28 +320,9 @@ fn demo_linked_partial_select() {
 
     println!("Select specific columns from main + related tables with auto-join:\n");
 
-    println!("1. select_with_linked() - Choose columns from both tables:");
-    println!("   User::query()");
-    println!("       .select_with_linked(");
-    println!("           vec![\"id\", \"name\"],            // Local columns");
-    println!("           \"profiles\",                       // Linked table");
-    println!("           \"id\",                             // Local PK/FK side");
-    println!("           \"user_id\",                        // Remote PK/FK side");
-    println!("           vec![\"bio\", \"website\"]         // Linked columns");
-    println!("       )");
-    println!("       .get_raw::<(i64, String, Option<String>, Option<String>)>()");
-    println!("       .await?;\n");
-
-    println!("2. select_also_linked() - All local + specific linked columns:");
-    println!("   User::query()");
-    println!("       .select_also_linked(");
-    println!("           \"profiles\",                       // Linked table");
-    println!("           \"id\",                             // Local primary key");
-    println!("           \"user_id\",                        // Remote foreign key");
-    println!("           vec![\"bio\", \"website\"]");
-    println!("       )");
-    println!("       .get_with_extra::<(Option<String>, Option<String>)>()");
-    println!("       .await?;\n");
+    println!("Rows are read into a struct of your own, by column name:");
+    show("#[derive(serde::Deserialize)]");
+    show("pub async fn linked_select(");
 
     println!("Benefits:");
     println!("   Only fetches columns you need (performance)");
@@ -458,28 +340,7 @@ fn demo_eager_loading_builder() {
 
     println!("Eager loading avoids N+1 query patterns when traversing relations:\n");
 
-    println!("1. Start from a query:");
-    println!("   let users = User::query()");
-    println!("       .where_eq(\"status\", \"active\")");
-    println!("       .with(\"profile\")");
-    println!("       .order_by(\"created_at\", Order::Desc)");
-    println!("       .get()");
-    println!("       .await?;\n");
-
-    println!("2. Load multiple relations in one pass:");
-    println!("   let users = User::query()");
-    println!("       .limit(10)");
-    println!("       .with_many(&[\"profile\", \"posts\", \"posts.comments\"])");
-    println!("       .get()");
-    println!("       .await?;\n");
-
-    println!("3. Inspect loaded data via WithRelations<M>:");
-    println!("   for user in users {{");
-    println!("       println!(\"user = {{}}\", user.model.name);");
-    println!(
-        "       println!(\"loaded relations: {{:?}}\", user.relations.keys().collect::<Vec<_>>());"
-    );
-    println!("   }}\n");
+    show("pub async fn eager_loading(");
 
     println!("Benefits:");
     println!("   Batch-loads relation graphs instead of per-row follow-up queries");
@@ -493,7 +354,7 @@ fn demo_eager_loading_builder() {
 
 fn main() {
     println!("╔═══════════════════════════════════════════════════════════════╗");
-    println!("║           TideORM - SeaORM Features Demo                  ║");
+    println!("║           TideORM - Typed Columns Demo                        ║");
     println!("╚═══════════════════════════════════════════════════════════════╝");
 
     demo_strongly_typed_columns();
@@ -506,7 +367,7 @@ fn main() {
     println!("\n╔═══════════════════════════════════════════════════════════════╗");
     println!("║                     Demo Complete!                             ║");
     println!("║                                                                 ║");
-    println!("║  All SeaORM features are now available in TideORM:        ║");
+    println!("║  All of these are available in TideORM:                       ║");
     println!("║  - Strongly-typed columns with compile-time safety            ║");
     println!("║  - Nested ActiveModel for cascade saves                       ║");
     println!("║  - Self-referencing relations for hierarchical data           ║");
@@ -514,4 +375,197 @@ fn main() {
     println!("║  - Linked partial select                                       ║");
     println!("║  - Eager loading builder                                       ║");
     println!("╚═══════════════════════════════════════════════════════════════╝\n");
+}
+
+/// Print one item of `snippets`, from `start` to its closing brace, as this
+/// file holds it.
+fn show(start: &str) {
+    const SOURCE: &str = include_str!("typed_columns_demo.rs");
+    let module = SOURCE
+        .find("\nmod snippets {")
+        .expect("this file has `snippets`");
+    let from = module + SOURCE[module..].find(start).expect("the snippet exists");
+    // Items in `snippets` close at an indent of four spaces.
+    let to = from + SOURCE[from..].find("\n    }").expect("the snippet ends") + "\n    }".len();
+    println!("    {}\n", &SOURCE[from..to]);
+}
+
+// =============================================================================
+// COMPILE-CHECKED SNIPPETS
+// =============================================================================
+
+/// What the demo prints. These need a database, so nothing calls them; that
+/// they compile is what keeps the printed code real.
+#[allow(
+    dead_code,
+    reason = "printed by the demo, not run: they need a database"
+)]
+mod snippets {
+    use tideorm::prelude::*;
+
+    #[tideorm::model(table = "users")]
+    pub struct User {
+        #[tideorm(primary_key, auto_increment)]
+        pub id: i64,
+        pub name: String,
+        pub age: Option<i32>,
+        pub active: bool,
+        #[tideorm(has_one = "Profile", foreign_key = "user_id")]
+        pub profile: HasOne<Profile>,
+        #[tideorm(has_many = "Post", foreign_key = "user_id")]
+        pub posts: HasMany<Post>,
+    }
+
+    #[tideorm::model(table = "profiles")]
+    pub struct Profile {
+        #[tideorm(primary_key, auto_increment)]
+        pub id: i64,
+        pub user_id: i64,
+        pub bio: Option<String>,
+        pub website: Option<String>,
+    }
+
+    #[tideorm::model(table = "posts")]
+    pub struct Post {
+        #[tideorm(primary_key, auto_increment)]
+        pub id: i64,
+        pub user_id: i64,
+        pub title: String,
+        #[tideorm(has_many = "Comment", foreign_key = "post_id")]
+        pub comments: HasMany<Comment>,
+    }
+
+    #[tideorm::model(table = "comments")]
+    pub struct Comment {
+        #[tideorm(primary_key, auto_increment)]
+        pub id: i64,
+        pub post_id: i64,
+        pub body: String,
+    }
+
+    #[tideorm::model(table = "employees")]
+    pub struct Employee {
+        #[tideorm(primary_key, auto_increment)]
+        pub id: i64,
+        pub name: String,
+        pub manager_id: Option<i64>,
+
+        // Parent reference (manager)
+        #[tideorm(foreign_key = "manager_id")]
+        pub manager: SelfRef<Employee>,
+
+        // Children reference (direct reports)
+        #[tideorm(foreign_key = "manager_id")]
+        pub reports: SelfRefMany<Employee>,
+    }
+
+    pub async fn typed_filters() -> tideorm::Result<Vec<User>> {
+        User::query()
+            .where_col(User::NAME.starts_with("Al"))
+            .where_col(User::AGE.gt(18))
+            .where_col(User::ACTIVE.eq(true))
+            .order_desc(User::ID)
+            .get()
+            .await
+    }
+
+    pub async fn nested_saves(
+        user: User,
+        profile: Profile,
+        posts: Vec<Post>,
+    ) -> tideorm::Result<u64> {
+        // Inserted or updated; profile.user_id = user.id
+        let (user, profile) = user.save_with_one(profile, Profile::USER_ID).await?;
+        // Each post.user_id = user.id
+        let (user, posts) = user.save_with_many(posts, Post::USER_ID).await?;
+        // Both already stored: plain updates in one transaction
+        let (user, _profile) = user.update_with_one(profile).await?;
+        let (user, posts) = user.update_with_many(posts).await?;
+        // Children first, then the parent; returns the rows deleted
+        user.delete_with_many(posts).await
+    }
+
+    pub async fn nested_builder(
+        user: User,
+        profile: Profile,
+        posts: Vec<Post>,
+    ) -> tideorm::Result<Vec<Post>> {
+        let (_user, mut saved) = NestedSaveBuilder::new(user)
+            .with_one(profile, Profile::USER_ID)
+            .with_many(posts, Post::USER_ID)
+            .save()
+            .await?;
+        // One entry per with_one/with_many, in order
+        let posts = saved
+            .pop()
+            .expect("with_many was added")
+            .into_many::<Post>()?;
+        Ok(posts)
+    }
+
+    pub async fn org_chart() -> tideorm::Result<()> {
+        if let Some(developer) = Employee::find(5).await? {
+            // Load the manager (parent)
+            let _manager: Option<Employee> = developer.manager.load().await?;
+            let _has_manager = developer.manager.exists().await?;
+        }
+        if let Some(vp) = Employee::find(2).await? {
+            // Direct reports, their count, and the subtree three levels deep
+            let _reports: Vec<Employee> = vp.reports.load().await?;
+            let _count = vp.reports.count().await?;
+            let _tree = vp.reports.load_tree(3).await?;
+        }
+        Ok(())
+    }
+
+    #[derive(serde::Deserialize)]
+    pub struct UserBio {
+        pub id: i64,
+        pub name: String,
+        pub bio: Option<String>,
+        pub website: Option<String>,
+    }
+
+    pub async fn linked_select() -> tideorm::Result<Vec<serde_json::Value>> {
+        // users.id = profiles.user_id; some columns from each table
+        let _bios: Vec<UserBio> = User::query()
+            .select_with_linked(
+                ["id", "name"],
+                "profiles",
+                "id",
+                "user_id",
+                ["bio", "website"],
+            )
+            .get_as()
+            .await?;
+        // Every user column, plus the profile's
+        User::query()
+            .select_also_linked("profiles", "id", "user_id", ["bio", "website"])
+            .get_json()
+            .await
+    }
+
+    pub async fn eager_loading() -> tideorm::Result<()> {
+        // Filters, order and paging go on the query, before `with`
+        let _active = User::query()
+            .where_eq(User::ACTIVE, true)
+            .order_desc(User::ID)
+            .with(User::PROFILE)
+            .get()
+            .await?;
+
+        // Several relations, nested paths included, in one pass
+        let users = User::query()
+            .limit(10)
+            .with_many([User::PROFILE, User::POSTS, "posts.comments"])
+            .get()
+            .await?;
+
+        // Read the loaded relations from the models' own fields
+        for user in &users {
+            let posts = user.posts.get_cached().map(|posts| posts.len());
+            println!("{}: {posts:?} posts", user.name);
+        }
+        Ok(())
+    }
 }

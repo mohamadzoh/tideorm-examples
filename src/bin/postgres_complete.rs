@@ -422,9 +422,9 @@ async fn main() -> tideorm::Result<()> {
         .min_connections(5)
         .connect_timeout(std::time::Duration::from_secs(10))
         .idle_timeout(std::time::Duration::from_secs(300))
-        .languages(&["en", "fr", "es", "ar"])
+        .languages(["en", "fr", "es", "ar"])
         .fallback_language("en")
-        .hidden_attributes(&["password_hash", "deleted_at"])
+        .hidden_attributes(["password_hash", "deleted_at"])
         .connect()
         .await?;
 
@@ -434,11 +434,8 @@ async fn main() -> tideorm::Result<()> {
 
     // Setup database schema
     println!("\n📋 Setting up database schema...");
-    use tideorm::internal::ConnectionTrait;
-    let conn = db().__internal_connection()?;
-    conn.execute_unprepared(CREATE_TABLES_SQL)
-        .await
-        .map_err(|e| tideorm::Error::query(e.to_string()))?;
+    // Unprepared, so the script may hold several statements.
+    db().exec_raw(CREATE_TABLES_SQL).await?;
     println!(" Schema ready!");
 
     // ========================================================================
@@ -554,20 +551,17 @@ async fn main() -> tideorm::Result<()> {
     // Load relations using field-based syntax
     println!("\n🔗 Loading relations...");
 
-    // has_one: User -> Profile
-    let mut alice = User::find_or_fail(alice.id).await?;
-    alice.profile = HasOne::new("user_id", "id").with_parent_pk(serde_json::json!(alice.id));
+    // has_one: User -> Profile (a loaded model's relation fields are wired already)
+    let alice = User::find_or_fail(alice.id).await?;
     let profile = alice.profile.load().await?;
     println!("   Alice's profile: {:?}", profile.map(|p| p.id));
 
     // has_many: User -> Posts
-    alice.posts = HasMany::new("user_id", "id").with_parent_pk(serde_json::json!(alice.id));
     let posts = alice.posts.load().await?;
     println!("   Alice's posts: {} posts", posts.len());
 
     // belongs_to: Post -> User
-    let mut post = Post::find_or_fail(post1.id).await?;
-    post.author = BelongsTo::new("user_id", "id").with_fk_value(serde_json::json!(post.user_id));
+    let post = Post::find_or_fail(post1.id).await?;
     let author = post.author.load().await?;
     println!(
         "   Post '{}' author: {:?}",
@@ -576,14 +570,11 @@ async fn main() -> tideorm::Result<()> {
     );
 
     // has_many: Post -> Comments
-    post.comments = HasMany::new("post_id", "id").with_parent_pk(serde_json::json!(post.id));
     let comments = post.comments.load().await?;
     println!("   Post '{}' has {} comments", post.title, comments.len());
 
     // belongs_to: Comment -> User
-    let mut comment = Comment::find_or_fail(comment1.id).await?;
-    comment.commenter =
-        BelongsTo::new("user_id", "id").with_fk_value(serde_json::json!(comment.user_id));
+    let comment = Comment::find_or_fail(comment1.id).await?;
     let commenter = comment.commenter.load().await?;
     println!("   Comment by: {:?}", commenter.map(|u| u.name));
 
@@ -648,7 +639,7 @@ async fn main() -> tideorm::Result<()> {
     let eager_users = User::query()
         .where_eq("status", "active")
         .limit(3)
-        .with_many(&["profile", "posts"])
+        .with_many(["profile", "posts"])
         .get()
         .await?;
     println!(
@@ -656,12 +647,12 @@ async fn main() -> tideorm::Result<()> {
         eager_users.len()
     );
     if let Some(first_user) = eager_users.first() {
-        let eager_posts: Option<Vec<Post>> = first_user.get_relation("posts");
+        // Eager-loaded values are read from the relation fields without a query.
         println!(
             "   First eager user '{}' profile_loaded={} posts_loaded={}",
             first_user.name,
-            first_user.has_relation("profile"),
-            eager_posts.as_ref().map(|items| items.len()).unwrap_or(0)
+            first_user.profile.get_cached().is_some(),
+            first_user.posts.get_cached().map_or(0, |items| items.len())
         );
     }
 
@@ -957,20 +948,17 @@ async fn main() -> tideorm::Result<()> {
     println!("💳 Transaction example...");
 
     // Successful transaction
-    let result = User::transaction(|_txn| {
-        Box::pin(async move {
-            // In a real app, you'd use txn for queries
-            // For now, we just demonstrate the API
+    let result = Database::current()?
+        .atomically(async {
+            // Every TideORM call in here joins the transaction on its own.
             println!("   Inside transaction...");
             Ok::<_, tideorm::Error>(())
         })
-    })
-    .await;
+        .await;
     println!("   Transaction result: {:?}", result.map(|_| "success"));
 
-    // Note: For actual transactional queries, you'd pass the transaction
-    // connection to your queries. The transaction auto-commits on success
-    // and auto-rollbacks on error.
+    // The transaction commits when the future returns Ok and rolls back
+    // when it returns Err.
 
     // ========================================================================
     // 9. BATCH OPERATIONS
@@ -1078,12 +1066,11 @@ async fn main() -> tideorm::Result<()> {
 
     println!("📜 Raw SQL queries...");
 
-    // Execute raw SQL using internal connection (already imported at top)
-    let result = conn
-        .execute_unprepared("UPDATE users SET status = 'active' WHERE status = 'active'")
-        .await
-        .map_err(|e| tideorm::Error::query(e.to_string()))?;
-    println!("   execute_unprepared(): {:?}", result.rows_affected());
+    // Execute raw SQL unprepared on the global database
+    let rows = db()
+        .exec_raw("UPDATE users SET status = 'active' WHERE status = 'active'")
+        .await?;
+    println!("   exec_raw(): {} rows", rows);
 
     // For raw queries with results, use Database::raw (no params version)
     let results: Vec<User> = Database::raw(
@@ -1156,13 +1143,13 @@ async fn main() -> tideorm::Result<()> {
     }
 
     let page1 = Product::paginate(1, 5).await?;
-    println!("   Page 1 (5/page): {} products", page1.len());
+    println!("   Page 1 (5/page): {} products", page1.items.len());
 
     let page2 = Product::paginate(2, 5).await?;
-    println!("   Page 2 (5/page): {} products", page2.len());
+    println!("   Page 2 (5/page): {} products", page2.items.len());
 
     let page3 = Product::paginate(3, 5).await?;
-    println!("   Page 3 (5/page): {} products", page3.len());
+    println!("   Page 3 (5/page): {} products", page3.items.len());
 
     // Using query builder pagination
     let electronics_page = Product::query()
@@ -1240,13 +1227,16 @@ async fn main() -> tideorm::Result<()> {
             "user_id",
             vec!["bio", "website"],
         )
-        .to_subquery_sql();
-    println!("   select_with_linked(): {}", preview(&linked_sql, 120));
+        .build_sql_preview();
+    // The preview's first line is a banner; the statement follows it.
+    let linked_sql = linked_sql.lines().last().unwrap_or_default();
+    println!("   select_with_linked(): {}", preview(linked_sql, 120));
 
     let linked_all_sql = User::query()
         .select_also_linked("profiles", "id", "user_id", vec!["bio"])
-        .to_subquery_sql();
-    println!("   select_also_linked(): {}", preview(&linked_all_sql, 120));
+        .build_sql_preview();
+    let linked_all_sql = linked_all_sql.lines().last().unwrap_or_default();
+    println!("   select_also_linked(): {}", preview(linked_all_sql, 120));
 
     println!("\n🧩 Join result consolidation...");
     let order1 = OrderSummary {
@@ -1366,8 +1356,9 @@ async fn main() -> tideorm::Result<()> {
     // SELECT category, COUNT(*) as product_count, AVG(price) as avg_price
     // FROM "products" WHERE active = true GROUP BY category HAVING COUNT(*) > 0
 
-    // For raw queries returning non-model data, we can use sqlx directly or
-    // create a simple model. Here we'll just demonstrate the API:
+    // Raw rows that are not a model decode through `Database::raw_as` into a
+    // `#[derive(FromQueryResult)]` type, or come back as JSON from
+    // `query_raw_json`. Here we read model rows:
     let product_count_by_category: Vec<Product> =
         Database::raw(r#"SELECT * FROM "products" WHERE category = 'Electronics'"#).await?;
     println!(
@@ -1451,7 +1442,7 @@ async fn main() -> tideorm::Result<()> {
     }
 
     GlobalProfiler::reset();
-    GlobalProfiler::set_slow_threshold(50);
+    GlobalProfiler::set_slow_threshold(Duration::from_millis(50));
     GlobalProfiler::enable();
     GlobalProfiler::record(Duration::from_millis(24));
     GlobalProfiler::record(Duration::from_millis(62));
@@ -1572,7 +1563,7 @@ async fn main() -> tideorm::Result<()> {
         LIMIT 7
     "#;
 
-    let result = conn.execute_unprepared(introspect_sql).await;
+    let result = db().exec_raw(introspect_sql).await;
     println!(
         "   Users table introspection query executed: {:?}",
         result.is_ok()
@@ -1581,7 +1572,7 @@ async fn main() -> tideorm::Result<()> {
     // Show what columns we expect from our model
     println!("\n   Expected columns from User model:");
     for col in user_schema.columns.iter().take(7) {
-        println!("     - {} ({})", col.name, col.col_type);
+        println!("     - {} ({:?})", col.name, col.col_type);
     }
 
     // ========================================================================

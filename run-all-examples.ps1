@@ -15,8 +15,10 @@ $examples = @(
     @{ Name = 'mysql_demo'; Args = @('run', '--bin', 'mysql_demo', '--features', 'mysql runtime-tokio', '--no-default-features') },
     @{ Name = 'sqlite_demo'; Args = @('run', '--bin', 'sqlite_demo', '--features', 'sqlite runtime-tokio', '--no-default-features') },
     @{ Name = 'migrations'; Args = @('run', '--bin', 'migrations') },
+    @{ Name = 'migration_test_runner'; Args = @('run', '--bin', 'migration_test_runner') },
     @{ Name = 'schema_file_demo'; Args = @('run', '--bin', 'schema_file_demo') },
     @{ Name = 'auto_model_discovery_demo'; Args = @('run', '--bin', 'auto_model_discovery_demo', '--features', 'sqlite runtime-tokio', '--no-default-features') },
+    @{ Name = 'seeding_demo'; Args = @('run', '--bin', 'seeding_demo') },
     @{ Name = 'validation_demo'; Args = @('run', '--bin', 'validation_demo') },
     @{ Name = 'dirty_tracking_demo'; Args = @('run', '--bin', 'dirty_tracking_demo', '--features', 'sqlite runtime-tokio dirty-tracking', '--no-default-features') },
     @{ Name = 'caching_demo'; Args = @('run', '--bin', 'caching_demo') },
@@ -30,7 +32,7 @@ $examples = @(
     @{ Name = 'attachments_translations_demo'; Args = @('run', '--bin', 'attachments_translations_demo') },
     @{ Name = 'attachment_url_demo'; Args = @('run', '--bin', 'attachment_url_demo') },
     @{ Name = 'datetime_types_demo'; Args = @('run', '--bin', 'datetime_types_demo') },
-    @{ Name = 'seaorm2_features_demo'; Args = @('run', '--bin', 'seaorm2_features_demo') }
+    @{ Name = 'typed_columns_demo'; Args = @('run', '--bin', 'typed_columns_demo') }
 )
 
 function Format-Command {
@@ -50,19 +52,27 @@ function Format-Command {
     return 'cargo {0}' -f ($formattedArgs -join ' ')
 }
 
-foreach ($example in $examples) {
-    $commandText = Format-Command -CommandArgs $example.Args
-    Write-Host ('=> {0}' -f $commandText)
+# Cargo, `.env` loading and the SQLite demo files all resolve against the current
+# directory, so run from this project's root wherever the script is called from.
+Push-Location $PSScriptRoot
+try {
+    foreach ($example in $examples) {
+        $commandText = Format-Command -CommandArgs $example.Args
+        Write-Host ('=> {0}' -f $commandText)
 
-    if ($DryRun) {
-        continue
-    }
+        if ($DryRun) {
+            continue
+        }
 
-    & cargo @($example.Args)
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error ('Example failed: {0}' -f $example.Name)
-        exit $LASTEXITCODE
+        & cargo @($example.Args)
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error ('Example failed: {0}' -f $example.Name)
+            exit $LASTEXITCODE
+        }
     }
+}
+finally {
+    Pop-Location
 }
 
 Write-Host 'All examples completed successfully.'

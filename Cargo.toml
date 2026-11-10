@@ -29,7 +29,7 @@ encrypted-fields = ["tideorm/encrypted-fields"]
 
 [dependencies]
 # TideORM - the main ORM crate
-tideorm = { version = "0.16.2", default-features = false }
+tideorm = { version = "0.17.0", default-features = false }
 # Async runtime
 tokio = { version = "1.51.0", features = ["full"], optional = true }
 async-trait = "0.1.89"
@@ -50,18 +50,22 @@ dotenvy = "0.15.7"
 [[bin]]
 name = "basic"
 path = "src/bin/basic.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "query_builder"
 path = "src/bin/query_builder.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "where_and_or_demo"
 path = "src/bin/where_and_or_demo.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "upsert_demo"
 path = "src/bin/upsert_demo.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "postgres_demo"
@@ -86,6 +90,7 @@ required-features = ["sqlite", "runtime-tokio"]
 [[bin]]
 name = "migrations"
 path = "src/bin/migrations.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "migration_test_runner"
@@ -95,6 +100,7 @@ required-features = ["postgres", "runtime-tokio"]
 [[bin]]
 name = "schema_file_demo"
 path = "src/bin/schema_file_demo.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "auto_model_discovery_demo"
@@ -117,6 +123,7 @@ required-features = ["sqlite", "runtime-tokio", "dirty-tracking"]
 [[bin]]
 name = "caching_demo"
 path = "src/bin/caching_demo.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
 name = "fulltext_demo"
@@ -165,7 +172,8 @@ required-features = ["attachments"]
 [[bin]]
 name = "datetime_types_demo"
 path = "src/bin/datetime_types_demo.rs"
+required-features = ["postgres", "runtime-tokio"]
 
 [[bin]]
-name = "seaorm2_features_demo"
-path = "src/bin/seaorm2_features_demo.rs"
+name = "typed_columns_demo"
+path = "src/bin/typed_columns_demo.rs"

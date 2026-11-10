@@ -46,9 +46,10 @@ pub struct Product {
 async fn main() -> tideorm::Result<()> {
     println!("🐬 TideORM MySQL Demo\n");
 
-    // Get database URL from environment
+    // Load .env file if present
+    let _ = dotenvy::dotenv();
     let database_url = env::var("MYSQL_DATABASE_URL")
-        .unwrap_or_else(|_| "mysql://root:root@localhost/tideorm_test".to_string());
+        .expect("MYSQL_DATABASE_URL must be set in environment or .env file");
 
     println!("Connecting to MySQL...");
 

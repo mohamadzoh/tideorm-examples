@@ -1,13 +1,13 @@
 //! Caching Demo for TideORM
 //!
-//! This example demonstrates how to use TideORM's query caching and
-//! prepared statement caching features to improve database performance.
+//! This example demonstrates how to use TideORM's query caching, and how the
+//! driver reuses prepared statements, to improve database performance.
 //!
 //! ## Running the Example
 //!
 //! ```bash
-//! # Set database URL
-//! export DATABASE_URL="postgres://user:pass@localhost/testdb"
+//! # Set the database URL (or put it in .env)
+//! export POSTGRESQL_DATABASE_URL="postgres://user:pass@localhost/testdb"
 //!
 //! # Run the example
 //! cargo run --bin caching_demo
@@ -48,9 +48,10 @@ pub struct Product {
 async fn main() -> tideorm::Result<()> {
     println!(" TideORM Caching Demo\n");
     
-    // Check for database URL
+    // Load .env file if present
+    let _ = dotenvy::dotenv();
     let db_url = std::env::var("POSTGRESQL_DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/test_tide_orm".to_string());
+        .expect("POSTGRESQL_DATABASE_URL must be set in environment or .env file");
     
     // Initialize database
     println!(" Connecting to database...");
@@ -193,61 +194,35 @@ let users = User::query()
     println!("   After clearing all: {}\n", QueryCache::global().len());
 }
 
-/// Demonstrate prepared statement caching
+/// Demonstrate prepared statement reuse
 async fn demo_prepared_statement_cache() {
     println!("═══════════════════════════════════════════════════════════════");
-    println!("  DEMO 4: Prepared Statement Caching");
+    println!("  DEMO 4: Prepared Statement Reuse");
     println!("═══════════════════════════════════════════════════════════════\n");
-    
-    // Enable prepared statement cache
-    PreparedStatementCache::global()
-        .set_max_statements(500)
-        .set_max_age(Duration::from_secs(3600))
-        .enable();
-    
-    println!(" Prepared statement cache enabled with:");
-    println!("   - Max statements: 500");
-    println!("   - Max age: 1 hour\n");
-    
-    println!("📝 Example: Statements are automatically cached\n");
+
+    println!(" Each connection keeps the statements it prepares, so a parameterized");
+    println!(" query runs again without being parsed and planned again.\n");
+
+    println!("📝 Example: Nothing to enable\n");
     println!("```rust");
-    println!(r#"// Enable prepared statement caching
-PreparedStatementCache::global()
-    .set_max_statements(500)
-    .enable();
+    println!(r#"// The first execution prepares the statement on its connection
+let user = User::find(1).await?;
 
-// First execution - statement is prepared and cached
-let users = User::find(1).await?;
-
-// Subsequent executions reuse the cached prepared statement
-// This avoids repeated parsing and planning
+// Later executions on that connection reuse it
 for id in 2..100 {{
     let user = User::find(id).await?;
 }}
 
-// View cache statistics
-let stats = PreparedStatementCache::global().stats();
-println!("Hits: {{}}, Misses: {{}}", stats.hits, stats.misses);"#);
+// The statements one pooled connection holds prepared
+let prepared = Database::current()?.cached_statements().await?;"#);
     println!("```\n");
-    
-    // Demonstrate statement caching
-    let sql1 = "SELECT * FROM users WHERE id = $1";
-    let sql2 = "SELECT * FROM users WHERE active = $1";
-    
-    // First call - misses
-    let (_, cached) = PreparedStatementCache::global().get_or_prepare(sql1);
-    println!("   First call to '{}...':", &sql1[..30]);
-    println!("   - Cached: {}", cached);
-    
-    // Second call - hits
-    let (_, cached) = PreparedStatementCache::global().get_or_prepare(sql1);
-    println!("   Second call to same query:");
-    println!("   - Cached: {}\n", cached);
-    
-    // Different query - misses
-    let (_, cached) = PreparedStatementCache::global().get_or_prepare(sql2);
-    println!("   Call to different query '{}...':", &sql2[..30]);
-    println!("   - Cached: {}\n", cached);
+
+    let prepared: tideorm::Result<usize> =
+        async { Database::current()?.cached_statements().await }.await;
+    match prepared {
+        Ok(count) => println!("   Statements prepared on a pooled connection: {}\n", count),
+        Err(error) => println!("   Could not read the statement cache: {}\n", error),
+    }
 }
 
 /// Demonstrate cache statistics
@@ -284,40 +259,20 @@ async fn demo_cache_statistics() {
     println!("   Evictions: {}", stats.evictions);
     println!("   Invalidations: {}", stats.invalidations);
     
-    println!("\n📊 Prepared Statement Cache Statistics:\n");
-    let stmt_stats = PreparedStatementCache::global().stats();
-    println!("   Cached Statements: {}", stmt_stats.cached_count);
-    println!("   Hits: {}", stmt_stats.hits);
-    println!("   Misses: {}", stmt_stats.misses);
-    println!("   Hit Ratio: {:.1}%", stmt_stats.hit_ratio() * 100.0);
-    println!("   Total Executions: {}", stmt_stats.total_executions);
-    
     println!("\n📝 Example: Monitoring cache performance\n");
     println!("```rust");
     println!(r#"// Get query cache stats
 let stats = QueryCache::global().stats();
 println!("Hit ratio: {{:.1}}%", stats.hit_ratio() * 100.0);
 
-// Get prepared statement stats
-let stmt_stats = PreparedStatementCache::global().stats();
-println!("Statement cache hit ratio: {{:.1}}%", stmt_stats.hit_ratio() * 100.0);
-
-// View cached statements
-let statements = PreparedStatementCache::global().cached_statements_info();
-for stmt in statements {{
-    println!("SQL: {{}}", stmt.sql_preview);
-    println!("  Executions: {{}}", stmt.execution_count);
-    println!("  Avg time: {{}}µs", stmt.avg_execution_time_us);
-}}
+// Per-statement timings come from the query logger and the profiler
 
 // Reset stats
-QueryCache::global().reset_stats();
-PreparedStatementCache::global().reset_stats();"#);
+QueryCache::global().reset_stats();"#);
     println!("```\n");
     
     // Clean up
     QueryCache::global().clear();
-    PreparedStatementCache::global().clear();
 }
 
 // =============================================================================

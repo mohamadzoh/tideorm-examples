@@ -345,9 +345,9 @@ async fn main() -> tideorm::Result<()> {
         // Schema sync (development only!)
         .sync(false)  // Set to true to auto-create tables from models
         // Application settings
-        .languages(&["en", "fr", "ar", "es"])  // Supported languages for all models
+        .languages(["en", "fr", "ar", "es"])  // Supported languages for all models
         .fallback_language("en")                // Default fallback language
-        .hidden_attributes(&["deleted_at"])     // Globally hidden from JSON
+        .hidden_attributes(["deleted_at"])     // Globally hidden from JSON
         .connect()
         .await?;
     
@@ -361,9 +361,8 @@ async fn main() -> tideorm::Result<()> {
     println!("📋 Setting up database schema...");
     
     // Create tables using raw SQL (for demo purposes)
-    use tideorm::internal::ConnectionTrait;
-    let conn = db().__internal_connection()?;
-    conn.execute_unprepared(CREATE_TABLES_SQL).await.map_err(|e| tideorm::Error::query(e.to_string()))?;
+    // Unprepared, so the script may hold several statements.
+    db().exec_raw(CREATE_TABLES_SQL).await?;
     println!(" Tables ready!\n");
     
     // ========================================================================
@@ -597,10 +596,10 @@ async fn main() -> tideorm::Result<()> {
     }
     
     let page1 = Post::paginate(1, 3).await?;
-    println!("   Page 1 (3 per page): {} posts", page1.len());
+    println!("   Page 1 (3 per page): {} posts", page1.items.len());
     
     let page2 = Post::paginate(2, 3).await?;
-    println!("   Page 2 (3 per page): {} posts", page2.len());
+    println!("   Page 2 (3 per page): {} posts", page2.items.len());
     
     println!();
     
@@ -627,8 +626,8 @@ async fn main() -> tideorm::Result<()> {
     println!("    File attachments config (has_one_files, has_many_files)");
     println!("    Searchable fields (searchable = \"...\")");
     println!();
-    println!("🌊 TideORM - SeaORM completely hidden!");
-    println!("   Notice: No SeaORM imports required in user code!");
+    println!("🌊 TideORM - the execution engine stays hidden!");
+    println!("   Notice: No engine imports required in user code!");
     
     Ok(())
 }

@@ -180,11 +180,11 @@ impl Migration for AddProfileFieldsToUsers {
     async fn up(&self, schema: &mut Schema) -> tideorm::Result<()> {
         schema
             .alter_table("users", |t| {
-                t.add_column("avatar_url", ColumnType::String).nullable();
+                t.add_column("avatar_url", ColumnType::String(StringLen::None)).nullable();
                 t.add_column("bio", ColumnType::Text).nullable();
-                t.add_column("website", ColumnType::String).nullable();
-                t.add_column("location", ColumnType::String).nullable();
-                t.add_column("settings", ColumnType::Jsonb).default(DefaultValue::Raw("'{}'::jsonb".to_string()));
+                t.add_column("website", ColumnType::String(StringLen::None)).nullable();
+                t.add_column("location", ColumnType::String(StringLen::None)).nullable();
+                t.add_column("settings", ColumnType::JsonBinary).default(DefaultValue::Raw("'{}'::jsonb".to_string()));
             })
             .await
     }
@@ -333,13 +333,14 @@ impl Migration for RenamePostCategoriesTable {
 
 #[tokio::main]
 async fn main() -> tideorm::Result<()> {
-    // Get database URL from environment or use default
-    let database_url =
-        std::env::var("POSTGRESQL_DATABASE_URL").unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/test_tide_orm".to_string());
+    // Load .env file if present
+    let _ = dotenvy::dotenv();
+    let database_url = std::env::var("POSTGRESQL_DATABASE_URL")
+        .expect("POSTGRESQL_DATABASE_URL must be set in environment or .env file");
 
     println!(" TideORM Migration Example");
+    // The URL is not printed: it may hold a password.
     println!("===========================\n");
-    println!("Database: {}\n", database_url);
 
     // =========================================================================
     // APPROACH 1: Register migrations via TideConfig (recommended)

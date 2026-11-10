@@ -43,7 +43,7 @@ async fn main() -> tideorm::Result<()> {
         .sync(true)
         .force_sync(true)
         .models::<(User, Post)>()
-        .languages(&["en", "fr"])
+        .languages(["en", "fr"])
         .connect()
         .await
     {
@@ -163,10 +163,10 @@ User::destroy(1).await?;
 // KEY POINTS
 // =============================================================================
 //
-// 1. NO SeaORM types are visible in user code:
+// 1. NO engine types are visible in user code:
 //    - No `Entity`, `Model`, `ActiveModel`
 //    - No `DbConn`, `DatabaseConnection`
-//    - No `sea_orm::*` imports
+//    - No `tideorm::orm::*` imports
 //
 // 2. Clean, expressive API:
 //    - `Database::init()` - initialize once

@@ -9,7 +9,6 @@
 //! Run with:
 //! `cargo run --bin dirty_tracking_demo --features "sqlite runtime-tokio dirty-tracking" --no-default-features`
 
-use serde_json::json;
 use tideorm::{Database, TideConfig, prelude::*};
 
 const DATABASE_URL: &str = "sqlite::memory:";
@@ -64,7 +63,7 @@ async fn main() -> tideorm::Result<()> {
     assert_eq!(loaded.changed_fields()?, Some(vec![]));
     assert_eq!(
         loaded.original_value("name")?,
-        Some(Some(json!("Alice Original")))
+        Some(Some(DbValue::from("Alice Original")))
     );
     println!(
         "changed fields after find(): {:?}",
@@ -80,7 +79,7 @@ async fn main() -> tideorm::Result<()> {
     assert_eq!(loaded.changed_fields()?, Some(vec!["name"]));
     assert_eq!(
         loaded.original_value("name")?,
-        Some(Some(json!("Alice Original")))
+        Some(Some(DbValue::from("Alice Original")))
     );
     println!("changed fields after edit: {:?}", loaded.changed_fields()?);
     println!(
@@ -93,7 +92,7 @@ async fn main() -> tideorm::Result<()> {
     assert_eq!(updated.changed_fields()?, Some(vec![]));
     assert_eq!(
         updated.original_value("name")?,
-        Some(Some(json!("Alice Pending")))
+        Some(Some(DbValue::from("Alice Pending")))
     );
     println!(
         "changed fields after update(): {:?}",
@@ -114,11 +113,17 @@ async fn main() -> tideorm::Result<()> {
 
     first.name = "Bob Persisted".to_string();
     let first = first.update().await?;
-    assert_eq!(first.original_value("name")?, Some(Some(json!("Bob Persisted"))));
+    assert_eq!(
+        first.original_value("name")?,
+        Some(Some(DbValue::from("Bob Persisted")))
+    );
 
     second.name = "Charlie Local".to_string();
     assert_eq!(second.changed_fields()?, Some(vec!["name"]));
-    assert_eq!(second.original_value("name")?, Some(Some(json!("Bob Persisted"))));
+    assert_eq!(
+        second.original_value("name")?,
+        Some(Some(DbValue::from("Bob Persisted")))
+    );
     println!("latest persisted name: {:?}", first.original_value("name")?);
     println!("stale copy changed fields: {:?}", second.changed_fields()?);
     println!(

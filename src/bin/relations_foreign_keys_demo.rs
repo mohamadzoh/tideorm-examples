@@ -156,9 +156,8 @@ async fn main() -> tideorm::Result<()> {
     println!("comment created on article_id={} by author_id={}", comment.article_id, comment.author_id);
 
     section("2. Load relations");
-    let mut author = Author::find_or_fail(alice.id).await?;
-    author.profile = HasOne::new("author_id", "id").with_parent_pk(serde_json::json!(author.id));
-    author.articles = HasMany::new("author_id", "id").with_parent_pk(serde_json::json!(author.id));
+    // A loaded model's relation fields are wired to its keys already.
+    let author = Author::find_or_fail(alice.id).await?;
 
     let loaded_profile = author.profile.load().await?;
     println!("has_one profile exists: {}", author.profile.exists().await?);
@@ -173,22 +172,14 @@ async fn main() -> tideorm::Result<()> {
     println!("all articles: {}", all_articles.len());
     println!("published articles: {}", published_articles.len());
 
-    let mut loaded_article = Article::find_or_fail(article1.id).await?;
-    loaded_article.author =
-        BelongsTo::new("author_id", "id").with_fk_value(serde_json::json!(loaded_article.author_id));
-    loaded_article.comments =
-        HasMany::new("article_id", "id").with_parent_pk(serde_json::json!(loaded_article.id));
+    let loaded_article = Article::find_or_fail(article1.id).await?;
 
     let article_author = loaded_article.author.load().await?;
     let article_comments = loaded_article.comments.load().await?;
     println!("belongs_to author: {:?}", article_author.map(|item| item.name));
     println!("article comments: {}", article_comments.len());
 
-    let mut loaded_comment = Comment::find_or_fail(comment.id).await?;
-    loaded_comment.article =
-        BelongsTo::new("article_id", "id").with_fk_value(serde_json::json!(loaded_comment.article_id));
-    loaded_comment.author =
-        BelongsTo::new("author_id", "id").with_fk_value(serde_json::json!(loaded_comment.author_id));
+    let loaded_comment = Comment::find_or_fail(comment.id).await?;
     println!(
         "comment article exists: {}, comment author exists: {}",
         loaded_comment.article.exists().await?,

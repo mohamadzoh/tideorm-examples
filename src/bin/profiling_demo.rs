@@ -90,7 +90,7 @@ fn global_profiler_demo() {
     section("2. GLOBAL PROFILER");
 
     GlobalProfiler::reset();
-    GlobalProfiler::set_slow_threshold(75);
+    GlobalProfiler::set_slow_threshold(Duration::from_millis(75));
     GlobalProfiler::enable();
 
     record_global_query(Duration::from_millis(21));

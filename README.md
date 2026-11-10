@@ -3,14 +3,14 @@
 Example applications demonstrating various [TideORM](https://github.com/mohamadzoh/tideorm) features.
 
 [![Website](https://img.shields.io/badge/website-tideorm.com-blue.svg)](https://tideorm.com)
-[![Rust](https://img.shields.io/badge/rust-1.85+-orange.svg)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/rust-1.94+-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## About
 
 This repository contains comprehensive examples showcasing the features and capabilities of TideORM - a developer-friendly ORM for Rust with clean, expressive syntax. These examples are designed to help you learn and understand how to use TideORM effectively in your projects.
 
-These examples are aligned with the current TideORM 0.9.14 APIs and use the current inline model syntax:
+These examples use the TideORM release that `Cargo.toml` names, and its inline model syntax:
 
 ```rust
 #[tideorm::model(table = "users")]
@@ -26,13 +26,15 @@ pub struct User {
 
 Before running any examples, ensure you have:
 
-1. **Rust 1.85+** installed ([rustup.rs](https://rustup.rs))
+1. **Rust 1.94+** installed ([rustup.rs](https://rustup.rs))
 2. **Database** (PostgreSQL, MySQL, or SQLite depending on the example)
 3. **Environment configuration** via `.env` file
 
-> Current note: this branch depends on the sibling `../tideorm` checkout so it can exercise the latest local TideORM features, including source-path model discovery, dirty tracking, and the entity manager.
+> TideORM comes from crates.io, at the version `Cargo.toml` names. To run the examples against a local TideORM checkout instead, add `path = "../tideorm"` to that dependency line as a local edit (keep it out of commits); the checkout's version must satisfy the version the line names.
 
 ### Database Setup
+
+> **Use throwaway databases.** The examples create, drop and recreate tables with common names (`users`, `posts`, `products`, ..), delete their rows, and run and roll back migrations in whatever database their URL names. Point every URL at a database created for these examples, never at one holding data you want to keep. The PostgreSQL and MySQL examples never fall back to a default URL.
 
 Create a `.env` file in the repository root:
 
@@ -44,7 +46,7 @@ POSTGRESQL_DATABASE_URL=postgres://postgres:postgres@localhost:5432/tideorm_exam
 MYSQL_DATABASE_URL=mysql://root:@localhost/tideorm_examples
 
 # SQLite (for SQLite examples)
-SQLITE_DATABASE_URL=sqlite:./tideorm_examples.db
+SQLITE_DATABASE_URL=sqlite:./tideorm_examples.db?mode=rwc
 ```
 
 ### Quick PostgreSQL Setup
@@ -63,7 +65,7 @@ docker run --name postgres-tideorm \
 
 ### Run All Examples on Windows PowerShell
 
-To run the documented examples in sequence and stop on the first failure:
+To run every example in sequence and stop on the first failure (the script runs from its own directory, wherever it is called from):
 
 ```powershell
 .\run-all-examples.ps1
@@ -88,8 +90,10 @@ To print the commands without executing them:
 | **mysql_demo** | MySQL/MariaDB operations | `cargo run --bin mysql_demo --features "mysql runtime-tokio" --no-default-features` |
 | **sqlite_demo** | SQLite embedded database | `cargo run --bin sqlite_demo --features "sqlite runtime-tokio" --no-default-features` |
 | **migrations** | Database schema migrations | `cargo run --bin migrations` |
+| **migration_test_runner** | Checks the migrator: run, re-run, rollback, reset, refresh | `cargo run --bin migration_test_runner` |
 | **schema_file_demo** | SQL schema file generation | `cargo run --bin schema_file_demo` |
 | **auto_model_discovery_demo** | Source-path model registration with `models_matching(...)` | `cargo run --bin auto_model_discovery_demo --features "sqlite runtime-tokio" --no-default-features` |
+| **seeding_demo** | Database seeding | `cargo run --bin seeding_demo` |
 | **validation_demo** | Model validation system | `cargo run --bin validation_demo` |
 | **dirty_tracking_demo** | Opt-in dirty tracking with `changed_fields()` and `original_value()` | `cargo run --bin dirty_tracking_demo --features "sqlite runtime-tokio dirty-tracking" --no-default-features` |
 | **caching_demo** | Query caching features | `cargo run --bin caching_demo` |
@@ -103,7 +107,7 @@ To print the commands without executing them:
 | **attachments_translations_demo** | File attachments & i18n | `cargo run --bin attachments_translations_demo` |
 | **attachment_url_demo** | Attachment URL generation | `cargo run --bin attachment_url_demo` |
 | **datetime_types_demo** | Date/time type handling | `cargo run --bin datetime_types_demo` |
-| **seaorm2_features_demo** | SeaORM 2.0 integration features | `cargo run --bin seaorm2_features_demo` |
+| **typed_columns_demo** | Typed columns, nested saves, self-references, joins and eager loading | `cargo run --bin typed_columns_demo` |
 
 ## Examples by Category
 
@@ -234,8 +238,6 @@ cargo run --bin relations_foreign_keys_demo --features "sqlite runtime-tokio" --
 ### 🧭 Entity Manager
 
 Explicit persistence context workflows, aggregate saves across loaded relations, and managed lifecycle operations.
-
-This example currently relies on the local sibling `../tideorm` checkout along with the other latest TideORM demos in this repo.
 
 ```bash
 cargo run --bin entity_manager_demo --features "sqlite runtime-tokio entity-manager" --no-default-features

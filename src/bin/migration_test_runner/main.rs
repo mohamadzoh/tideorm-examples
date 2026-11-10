@@ -10,10 +10,7 @@
 //! # Set up a PostgreSQL database for testing
 //! createdb migration_tests
 //!
-//! # Run with default database URL
-//! cargo run --bin migration_test_runner
-//!
-//! # Or specify a custom database URL
+//! # POSTGRESQL_DATABASE_URL (from the environment or .env) names the database; there is no default
 //! POSTGRESQL_DATABASE_URL=postgres://user:pass@localhost/migration_tests cargo run --bin migration_test_runner
 //! ```
 //!
@@ -48,8 +45,8 @@ async fn main() -> tideorm::Result<()> {
         .expect("POSTGRESQL_DATABASE_URL must be set in environment or .env file");
 
     println!("🧪 TideORM Migration Test Runner");
+    // The URL is not printed: it may hold a password.
     println!("=================================\n");
-    println!("Database: {}\n", database_url);
 
     // Connect to database
     TideConfig::init()
@@ -106,19 +103,19 @@ async fn main() -> tideorm::Result<()> {
     if skipped_0 { passed += 1; } else { failed += 1; }
 
     // Verify tables were created
-    let products_exists = table_exists("test_products").await;
+    let products_exists = table_exists("test_products").await?;
     print_test_result("test_products table should exist", products_exists);
     if products_exists { passed += 1; } else { failed += 1; }
 
-    let orders_exists = table_exists("test_orders").await;
+    let orders_exists = table_exists("test_orders").await?;
     print_test_result("test_orders table should exist", orders_exists);
     if orders_exists { passed += 1; } else { failed += 1; }
 
-    let order_items_exists = table_exists("test_order_items").await;
+    let order_items_exists = table_exists("test_order_items").await?;
     print_test_result("test_order_items table should exist", order_items_exists);
     if order_items_exists { passed += 1; } else { failed += 1; }
 
-    let inventory_exists = table_exists("test_inventory").await;
+    let inventory_exists = table_exists("test_inventory").await?;
     print_test_result("test_inventory table should exist", inventory_exists);
     if inventory_exists { passed += 1; } else { failed += 1; }
 
@@ -127,20 +124,20 @@ async fn main() -> tideorm::Result<()> {
     // =========================================================================
     print_section("TEST 3: Verify Column Creation");
 
-    let name_col = column_exists("test_products", "name").await;
+    let name_col = column_exists("test_products", "name").await?;
     print_test_result("test_products.name column should exist", name_col);
     if name_col { passed += 1; } else { failed += 1; }
 
-    let sku_col = column_exists("test_products", "sku").await;
+    let sku_col = column_exists("test_products", "sku").await?;
     print_test_result("test_products.sku column should exist", sku_col);
     if sku_col { passed += 1; } else { failed += 1; }
 
     // Verify alter table added columns
-    let desc_col = column_exists("test_products", "description").await;
+    let desc_col = column_exists("test_products", "description").await?;
     print_test_result("test_products.description column should exist (from alter table)", desc_col);
     if desc_col { passed += 1; } else { failed += 1; }
 
-    let cat_col = column_exists("test_products", "category").await;
+    let cat_col = column_exists("test_products", "category").await?;
     print_test_result("test_products.category column should exist (from alter table)", cat_col);
     if cat_col { passed += 1; } else { failed += 1; }
 
@@ -169,7 +166,7 @@ async fn main() -> tideorm::Result<()> {
     print_test_result("All migrations should show as applied", all_applied);
     if all_applied { passed += 1; } else { failed += 1; }
 
-    let migration_count = get_test_migration_count().await;
+    let migration_count = get_test_migration_count().await?;
     let correct_db_count = migration_count == 5;
     print_test_result("_migrations table should have 5 test records", correct_db_count);
     if correct_db_count { passed += 1; } else { failed += 1; }
@@ -192,7 +189,7 @@ async fn main() -> tideorm::Result<()> {
     if correct_version { passed += 1; } else { failed += 1; }
 
     // Verify inventory table was dropped
-    let inventory_dropped = !table_exists("test_inventory").await;
+    let inventory_dropped = !table_exists("test_inventory").await?;
     print_test_result("test_inventory table should be dropped after rollback", inventory_dropped);
     if inventory_dropped { passed += 1; } else { failed += 1; }
 
@@ -208,12 +205,12 @@ async fn main() -> tideorm::Result<()> {
     if rolled_back_2 { passed += 1; } else { failed += 1; }
 
     // Verify description column was dropped (migration 4 rolled back)
-    let desc_dropped = !column_exists("test_products", "description").await;
+    let desc_dropped = !column_exists("test_products", "description").await?;
     print_test_result("description column should be dropped", desc_dropped);
     if desc_dropped { passed += 1; } else { failed += 1; }
 
     // Verify order_items table was dropped (migration 3 rolled back)
-    let order_items_dropped = !table_exists("test_order_items").await;
+    let order_items_dropped = !table_exists("test_order_items").await?;
     print_test_result("test_order_items table should be dropped", order_items_dropped);
     if order_items_dropped { passed += 1; } else { failed += 1; }
 
@@ -244,14 +241,14 @@ async fn main() -> tideorm::Result<()> {
     if reset_5 { passed += 1; } else { failed += 1; }
 
     // Verify all tables are dropped
-    let all_dropped = !table_exists("test_products").await
-        && !table_exists("test_orders").await
-        && !table_exists("test_order_items").await
-        && !table_exists("test_inventory").await;
+    let all_dropped = !table_exists("test_products").await?
+        && !table_exists("test_orders").await?
+        && !table_exists("test_order_items").await?
+        && !table_exists("test_inventory").await?;
     print_test_result("All test tables should be dropped after reset", all_dropped);
     if all_dropped { passed += 1; } else { failed += 1; }
 
-    let zero_migrations = get_test_migration_count().await == 0;
+    let zero_migrations = get_test_migration_count().await? == 0;
     print_test_result("_migrations table should have 0 test records after reset", zero_migrations);
     if zero_migrations { passed += 1; } else { failed += 1; }
 
@@ -279,7 +276,7 @@ async fn main() -> tideorm::Result<()> {
     // =========================================================================
     print_section("TEST 11: Migration Version Ordering");
 
-    let versions = get_test_applied_versions().await;
+    let versions = get_test_applied_versions().await?;
     let correctly_ordered = versions == vec![
         "20260106_001",
         "20260106_002",
@@ -309,11 +306,13 @@ async fn main() -> tideorm::Result<()> {
     println!("  📋 Total:  {}", passed + failed);
     println!();
 
-    if failed == 0 {
-        println!("🎉 All migration tests passed!\n");
-    } else {
-        println!("⚠️  Some tests failed. Please review the output above.\n");
+    if failed > 0 {
+        // An error exits nonzero, so a script or CI run sees the failure.
+        return Err(tideorm::Error::query(format!(
+            "{failed} of {} migration checks failed; see the output above",
+            passed + failed
+        )));
     }
-
+    println!("🎉 All migration tests passed!\n");
     Ok(())
 }

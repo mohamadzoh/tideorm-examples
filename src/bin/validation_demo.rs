@@ -3,7 +3,8 @@
 //! **Category:** Data Validation
 //!
 //! This example demonstrates TideORM's built-in validation system for models.
-//! Validation rules can be applied using attributes or programmatically.
+//! Validation rules can be declared on model fields with `#[validate(..)]`
+//! or applied programmatically.
 //!
 //! ## Run this example
 //!
@@ -12,45 +13,100 @@
 //! ```
 
 use tideorm::validation::{
-    ValidatableValue, ValidationBuilder, ValidationErrors, ValidationRule, Validator,
+    ValidatableValue, Validate, ValidationBuilder, ValidationErrors, ValidationRule, Validator,
 };
 
 // =============================================================================
 // MODEL DEFINITION WITH VALIDATION ATTRIBUTES
 // =============================================================================
 
-/// User model with validation rules defined via attributes
+/// User model with validation rules defined via attributes.
 ///
-/// Note: When using the #[validate(...)] attribute, validation is automatic
-/// when calling user.validate() method.
+/// `create()`, `update()` and `save()` check these rules before writing;
+/// `user.validate()` checks them without a database.
 #[tideorm::model(table = "users")]
 pub struct User {
     #[tideorm(primary_key, auto_increment)]
     pub id: i64,
 
     // Email validation: required and must be valid email format
-    // #[validate(required, email)]
+    #[validate(required, email)]
     pub email: String,
 
     // Username: required, 3-20 chars, alphanumeric only
-    // #[validate(required, min_length = 3, max_length = 20, alphanumeric)]
+    #[validate(required, min_length = 3, max_length = 20, alphanumeric)]
     pub username: String,
 
     // Password: required, minimum 8 characters
-    // #[validate(required, min_length = 8)]
+    #[validate(required, min_length = 8)]
     pub password: String,
 
-    // Age: optional, but if present must be 18-120
-    // #[validate(min = 18, max = 120)]
+    // Age: optional, but if present must be 18-120 (`None` passes)
+    #[validate(range(18, 120))]
     pub age: Option<i32>,
 
     // Website: optional, but if present must be valid URL
-    // #[validate(url)]
+    #[validate(url)]
     pub website: Option<String>,
 
-    // Status: must be one of the allowed values
-    // #[validate(in = "active,pending,inactive")]
+    // Status: there is no attribute for an allow-list; check it by hand with
+    // `ValidationRule::In`, as `model_validation_example` does.
     pub status: String,
+}
+
+// =============================================================================
+// MODEL VALIDATION
+// =============================================================================
+
+fn model_validation_example() {
+    println!(
+        "
+=== Model Validation (#[validate] attributes) ===
+"
+    );
+
+    let mut user = User {
+        id: 0,
+        email: "not-an-email".to_string(),
+        username: "x!".to_string(),
+        password: "short".to_string(),
+        age: Some(12),
+        website: Some("not-a-url".to_string()),
+        status: "archived".to_string(),
+    };
+
+    println!("An invalid user:");
+    match user.validate() {
+        Ok(()) => println!("  ✓ valid"),
+        Err(errors) => {
+            for (field, message) in errors.errors() {
+                println!("  ✗ {}: {}", field, message);
+            }
+        }
+    }
+    let statuses = ValidationRule::In(vec![
+        "active".to_string(),
+        "pending".to_string(),
+        "inactive".to_string(),
+    ]);
+    if let Some(message) = Validator::validate_rule(&user.status, &statuses, "status") {
+        println!("  ✗ status: {}", message);
+    }
+
+    user.email = "jane@example.com".to_string();
+    user.username = "jane42".to_string();
+    user.password = "correct horse".to_string();
+    user.age = None;
+    user.website = Some("https://example.com".to_string());
+    user.status = "active".to_string();
+    println!(
+        "
+After fixing it:"
+    );
+    match user.validate() {
+        Ok(()) => println!("  ✓ valid"),
+        Err(errors) => println!("  ✗ {}", errors),
+    }
 }
 
 // =============================================================================
@@ -524,6 +580,7 @@ fn main() {
     println!("║            TideORM Validation System Demo                      ║");
     println!("╚════════════════════════════════════════════════════════════════╝");
 
+    model_validation_example();
     basic_validation_rules();
     validator_examples();
     validation_builder_examples();

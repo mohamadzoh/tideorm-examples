@@ -72,6 +72,12 @@ fn print_products(products: &[Product], limit: usize) {
     }
 }
 
+/// Whether `products` is non-empty and every one passes `check`: an empty result
+/// would pass any `all(..)` check, however broken the filter.
+fn every(products: &[Product], check: impl Fn(&Product) -> bool) -> bool {
+    !products.is_empty() && products.iter().all(check)
+}
+
 // =============================================================================
 // TEST DATA SETUP
 // =============================================================================
@@ -235,7 +241,7 @@ async fn test_basic_where_conditions() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(results.len() == 3, "Should find 3 Apple products");
-    assert_test!(results.iter().all(|p| p.brand == "Apple"), "All should be Apple brand");
+    assert_test!(every(&results, |p| p.brand == "Apple"), "All should be Apple brand");
     
     // Test: where_not (not equals)
     test_case!("where_not - Find all non-Electronics products");
@@ -244,7 +250,7 @@ async fn test_basic_where_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.category != "Electronics"), "None should be Electronics");
+    assert_test!(every(&results, |p| p.category != "Electronics"), "None should be Electronics");
     assert_test!(results.len() == 22, "Should find 22 non-Electronics products");
     
     // Test: Multiple where_eq (AND logic)
@@ -255,7 +261,7 @@ async fn test_basic_where_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 10);
-    assert_test!(results.iter().all(|p| p.active && p.featured), "All should be active AND featured");
+    assert_test!(every(&results, |p| p.active && p.featured), "All should be active AND featured");
     assert_test!(results.len() == 10, "Should find 10 active featured products");
     
     Ok(())
@@ -271,7 +277,7 @@ async fn test_comparison_operators() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.price > 500.0), "All prices should be > $500");
+    assert_test!(every(&results, |p| p.price > 500.0), "All prices should be > $500");
     let expected = 8; // Count products > $500
     assert_test!(results.len() == expected, &format!("Should find {} expensive products", expected));
     
@@ -282,7 +288,7 @@ async fn test_comparison_operators() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.rating >= 4.6), "All ratings should be >= 4.6");
+    assert_test!(every(&results, |p| p.rating >= 4.6), "All ratings should be >= 4.6");
     
     // Test: where_lt (less than)
     test_case!("where_lt - Products with stock < 50");
@@ -291,7 +297,7 @@ async fn test_comparison_operators() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.stock < 50), "All stock should be < 50");
+    assert_test!(every(&results, |p| p.stock < 50), "All stock should be < 50");
     
     // Test: where_lte (less than or equal)
     test_case!("where_lte - Products with price <= $50");
@@ -300,7 +306,7 @@ async fn test_comparison_operators() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.price <= 50.0), "All prices should be <= $50");
+    assert_test!(every(&results, |p| p.price <= 50.0), "All prices should be <= $50");
     
     // Test: Combined comparisons
     test_case!("Combined - Price between $100-$500 AND rating > 4.4");
@@ -312,7 +318,7 @@ async fn test_comparison_operators() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.price > 100.0 && p.price < 500.0 && p.rating > 4.4),
+        every(&results, |p| p.price > 100.0 && p.price < 500.0 && p.rating > 4.4),
         "All should match combined criteria"
     );
     
@@ -329,7 +335,7 @@ async fn test_string_matching() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.name.starts_with("iPhone")), "All should start with iPhone");
+    assert_test!(every(&results, |p| p.name.starts_with("iPhone")), "All should start with iPhone");
     assert_test!(results.len() == 2, "Should find 2 iPhone products");
     
     // Test: where_like - Contains pattern
@@ -339,7 +345,7 @@ async fn test_string_matching() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.name.contains("Pro")), "All should contain 'Pro'");
+    assert_test!(every(&results, |p| p.name.contains("Pro")), "All should contain 'Pro'");
     
     // Test: where_like - Ends with pattern
     test_case!("where_like - Descriptions ending with 'laptop'");
@@ -349,7 +355,7 @@ async fn test_string_matching() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.description.as_ref().map(|d| d.ends_with("laptop")).unwrap_or(false)),
+        every(&results, |p| p.description.as_ref().map(|d| d.ends_with("laptop")).unwrap_or(false)),
         "All descriptions should end with 'laptop'"
     );
     
@@ -362,7 +368,7 @@ async fn test_string_matching() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| !p.name.to_lowercase().contains("phone")),
+        every(&results, |p| !p.name.to_lowercase().contains("phone")),
         "None should contain 'Phone'"
     );
     
@@ -380,7 +386,7 @@ async fn test_in_and_not_in() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.category == "Electronics" || p.category == "Books"),
+        every(&results, |p| p.category == "Electronics" || p.category == "Books"),
         "All should be Electronics or Books"
     );
     assert_test!(results.len() == 13, "Should find 13 products (8 Electronics + 5 Books)");
@@ -393,7 +399,7 @@ async fn test_in_and_not_in() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| ["Apple", "Samsung", "Google"].contains(&p.brand.as_str())),
+        every(&results, |p| ["Apple", "Samsung", "Google"].contains(&p.brand.as_str())),
         "All should be from specified brands"
     );
     
@@ -405,7 +411,7 @@ async fn test_in_and_not_in() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.category != "Electronics" && p.category != "Sports"),
+        every(&results, |p| p.category != "Electronics" && p.category != "Sports"),
         "None should be Electronics or Sports"
     );
     
@@ -417,7 +423,7 @@ async fn test_in_and_not_in() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.discount_percent.map(|d| [10, 15, 20].contains(&d)).unwrap_or(false)),
+        every(&results, |p| p.discount_percent.map(|d| [10, 15, 20].contains(&d)).unwrap_or(false)),
         "All should have 10%, 15%, or 20% discount"
     );
     
@@ -434,7 +440,7 @@ async fn test_null_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.description.is_none()), "All descriptions should be null");
+    assert_test!(every(&results, |p| p.description.is_none()), "All descriptions should be null");
     
     // Test: where_not_null
     test_case!("where_not_null - Products with description");
@@ -443,7 +449,7 @@ async fn test_null_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.description.is_some()), "All should have descriptions");
+    assert_test!(every(&results, |p| p.description.is_some()), "All should have descriptions");
     
     // Test: where_null on discount
     test_case!("where_null - Products with no discount");
@@ -452,7 +458,7 @@ async fn test_null_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.discount_percent.is_none()), "All discounts should be null");
+    assert_test!(every(&results, |p| p.discount_percent.is_none()), "All discounts should be null");
     
     // Test: Combine null with other conditions
     test_case!("Combined - Active products with discount");
@@ -463,7 +469,7 @@ async fn test_null_conditions() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.active && p.discount_percent.is_some()),
+        every(&results, |p| p.active && p.discount_percent.is_some()),
         "All should be active with discount"
     );
     
@@ -481,7 +487,7 @@ async fn test_between_conditions() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.price >= 50.0 && p.price <= 100.0),
+        every(&results, |p| p.price >= 50.0 && p.price <= 100.0),
         "All prices should be between $50 and $100"
     );
     
@@ -493,7 +499,7 @@ async fn test_between_conditions() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.stock >= 100 && p.stock <= 300),
+        every(&results, |p| p.stock >= 100 && p.stock <= 300),
         "All stock should be between 100 and 300"
     );
     
@@ -505,7 +511,7 @@ async fn test_between_conditions() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.rating >= 4.5 && p.rating <= 4.7),
+        every(&results, |p| p.rating >= 4.5 && p.rating <= 4.7),
         "All ratings should be between 4.5 and 4.7"
     );
     
@@ -518,7 +524,7 @@ async fn test_between_conditions() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.category == "Electronics" && p.price >= 500.0 && p.price <= 1500.0),
+        every(&results, |p| p.category == "Electronics" && p.price >= 500.0 && p.price <= 1500.0),
         "All should be Electronics in price range"
     );
     
@@ -539,9 +545,8 @@ async fn test_simple_or_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 10);
-    assert_test!(!results.is_empty(), "Should find Apple and Samsung products");
     assert_test!(
-        results.iter().all(|p| p.brand == "Apple" || p.brand == "Samsung"),
+        every(&results, |p| p.brand == "Apple" || p.brand == "Samsung"),
         "All should be Apple or Samsung"
     );
     println!("   Found {} Apple/Samsung products", results.len());
@@ -554,9 +559,8 @@ async fn test_simple_or_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(!results.is_empty(), "Should find cheap or expensive products");
     assert_test!(
-        results.iter().all(|p| p.price < 50.0 || p.price > 1000.0),
+        every(&results, |p| p.price < 50.0 || p.price > 1000.0),
         "All should be cheap or expensive"
     );
 
@@ -568,9 +572,8 @@ async fn test_simple_or_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(!results.is_empty(), "Should find Pro or Premium products");
     assert_test!(
-        results.iter().all(|p|
+        every(&results, |p|
             p.name.contains("Pro") ||
             p.description.as_ref().map(|d| d.contains("Premium")).unwrap_or(false)
         ),
@@ -585,9 +588,8 @@ async fn test_simple_or_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 10);
-    assert_test!(!results.is_empty(), "Should find Nike, Adidas or O'Reilly products");
     assert_test!(
-        results.iter().all(|p| ["Nike", "Adidas", "O'Reilly"].contains(&p.brand.as_str())),
+        every(&results, |p| ["Nike", "Adidas", "O'Reilly"].contains(&p.brand.as_str())),
         "All should be Nike, Adidas or O'Reilly"
     );
 
@@ -599,9 +601,8 @@ async fn test_simple_or_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(!results.is_empty(), "Should find featured or undescribed products");
     assert_test!(
-        results.iter().all(|p| p.featured || p.description.is_none()),
+        every(&results, |p| p.featured || p.description.is_none()),
         "All should be featured or have no description"
     );
 
@@ -613,9 +614,8 @@ async fn test_simple_or_conditions() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(!results.is_empty(), "Should find low- or high-stock products");
     assert_test!(
-        results.iter().all(|p| p.stock < 50 || p.stock > 300),
+        every(&results, |p| p.stock < 50 || p.stock > 300),
         "All should have low or high stock"
     );
 
@@ -636,7 +636,7 @@ async fn test_fluent_or_api() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.category == "Electronics" || p.category == "Home"),
+        every(&results, |p| p.category == "Electronics" || p.category == "Home"),
         "All should be Electronics or Home"
     );
     assert_test!(results.len() == 14, "Should find 14 products (8 Electronics + 6 Home)");
@@ -652,7 +652,7 @@ async fn test_fluent_or_api() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             (p.brand == "Apple" && p.active) || 
             (p.brand == "Samsung" && p.featured)
         ),
@@ -670,7 +670,7 @@ async fn test_fluent_or_api() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             (p.category == "Electronics" && p.price > 1000.0) || 
             (p.category == "Clothing" && p.discount_percent.is_some())
         ),
@@ -691,7 +691,7 @@ async fn test_fluent_or_api() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             (p.category == "Electronics" && p.active && p.rating > 4.5) || 
             (p.category == "Books" && p.featured)
         ),
@@ -710,7 +710,7 @@ async fn test_fluent_or_api() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.active && (p.category == "Electronics" || p.category == "Books")),
+        every(&results, |p| p.active && (p.category == "Electronics" || p.category == "Books")),
         "All should be active AND (Electronics OR Books)"
     );
     
@@ -725,7 +725,7 @@ async fn test_fluent_or_api() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.name.starts_with("iPhone") || p.name.contains("Galaxy")),
+        every(&results, |p| p.name.starts_with("iPhone") || p.name.contains("Galaxy")),
         "All should match name patterns"
     );
     assert_test!(results.len() == 4, "Should find 4 products (2 iPhone + 2 Galaxy)");
@@ -741,7 +741,7 @@ async fn test_fluent_or_api() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.brand == "Apple" || 
             p.discount_percent.map(|d| d == 20 || d == 25).unwrap_or(false)
         ),
@@ -759,7 +759,7 @@ async fn test_fluent_or_api() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             (p.price >= 20.0 && p.price <= 50.0) || 
             (p.price >= 1000.0 && p.price <= 2000.0)
         ),
@@ -783,7 +783,7 @@ async fn test_complex_combined_queries() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.category == "Electronics" && 
             p.active && 
             p.price < 1000.0 && 
@@ -802,7 +802,7 @@ async fn test_complex_combined_queries() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| p.active && p.stock < 50 && p.rating >= 4.0),
+        every(&results, |p| p.active && p.stock < 50 && p.rating >= 4.0),
         "All should need reorder"
     );
     
@@ -818,7 +818,7 @@ async fn test_complex_combined_queries() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| p.active && (p.featured || p.discount_percent.is_some())),
+        every(&results, |p| p.active && (p.featured || p.discount_percent.is_some())),
         "All should be featured or discounted"
     );
     
@@ -834,7 +834,7 @@ async fn test_complex_combined_queries() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             (p.brand == "Apple" && p.price > 500.0) || 
             (p.brand == "Samsung" && p.active) ||
             (p.brand == "Nike" || p.brand == "Adidas")
@@ -855,7 +855,7 @@ async fn test_complex_combined_queries() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.name.contains("Pro") && 
             p.rating >= 4.5 && 
             (p.category == "Electronics" || p.category == "Home")
@@ -948,9 +948,7 @@ async fn test_ordering_and_pagination() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    for i in 1..results.len() {
-        assert_test!(results[i-1].price <= results[i].price, "Should be in ascending price order");
-    }
+    assert_test!(results.len() == 5 && results.windows(2).all(|w| w[0].price <= w[1].price), "Should be 5 products in ascending price order");
     
     // Test: order_by DESC
     test_case!("order_by DESC - Products ordered by rating (best first)");
@@ -961,9 +959,7 @@ async fn test_ordering_and_pagination() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    for i in 1..results.len() {
-        assert_test!(results[i-1].rating >= results[i].rating, "Should be in descending rating order");
-    }
+    assert_test!(results.len() == 5 && results.windows(2).all(|w| w[0].rating >= w[1].rating), "Should be 5 products in descending rating order");
     
     // Test: Multiple order_by
     test_case!("Multiple order_by - By category ASC, then price DESC");
@@ -1026,7 +1022,7 @@ async fn test_ordering_and_pagination() -> tideorm::Result<()> {
     print_products(&results, 5);
     assert_test!(results.len() == 5, "Should return 5 products");
     assert_test!(
-        results.iter().all(|p| p.category == "Electronics" || p.category == "Home"),
+        every(&results, |p| p.category == "Electronics" || p.category == "Home"),
         "All should be Electronics or Home"
     );
     for i in 1..results.len() {
@@ -1055,7 +1051,7 @@ async fn test_advanced_business_scenarios() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| p.active && p.stock > 100 && p.rating >= 4.3 && p.discount_percent.is_none()),
+        every(&results, |p| p.active && p.stock > 100 && p.rating >= 4.3 && p.discount_percent.is_none()),
         "All should qualify for flash sale"
     );
     println!("   {} products qualify for flash sale", results.len());
@@ -1073,7 +1069,7 @@ async fn test_advanced_business_scenarios() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| p.stock < 50 || !p.active || p.rating < 4.3),
+        every(&results, |p| p.stock < 50 || !p.active || p.rating < 4.3),
         "All should be clearance candidates"
     );
     println!("   {} products are clearance candidates", results.len());
@@ -1095,7 +1091,7 @@ async fn test_advanced_business_scenarios() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.active && (
                 (p.category == "Electronics" && p.price > 500.0 && p.rating >= 4.5) ||
                 (p.category == "Home" && p.price > 200.0 && p.rating >= 4.6)
@@ -1135,7 +1131,7 @@ async fn test_advanced_business_scenarios() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.active && ((p.stock < 50 && p.rating > 4.5) || p.stock < 30)
         ),
         "All should need reordering"
@@ -1159,7 +1155,7 @@ async fn test_advanced_business_scenarios() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.active && 
             p.discount_percent.is_some() && 
             p.rating >= 4.0 &&
@@ -1226,7 +1222,7 @@ async fn test_nested_or_groups() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.active &&
             (p.category == "Electronics" || p.category == "Home") &&
             ["Apple", "Samsung", "Breville", "Dyson"].contains(&p.brand.as_str())
@@ -1268,7 +1264,7 @@ async fn test_nested_or_groups() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.active && 
             p.rating >= 4.0 &&
             ((p.category == "Electronics" && p.price < 1000.0) || 
@@ -1292,7 +1288,7 @@ async fn test_nested_or_groups() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.active && 
             p.rating >= 4.3 &&
             ["Apple", "Samsung", "Nike"].contains(&p.brand.as_str()) &&
@@ -1313,7 +1309,7 @@ async fn test_nested_or_groups() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.name.starts_with("iPhone") ||
             (p.price >= 75.0 && p.price <= 85.0) ||
             [500, 400, 300].contains(&p.stock)
@@ -1338,7 +1334,7 @@ async fn test_nested_or_groups() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.active && 
             p.rating > 4.0 &&
             ((p.category == "Electronics" && p.price > 500.0 && 
@@ -1375,7 +1371,7 @@ async fn test_edge_cases_and_special_patterns() -> tideorm::Result<()> {
         .get()
         .await?;
     print_products(&results, 5);
-    assert_test!(results.iter().all(|p| p.brand == "Apple"), "All should be Apple");
+    assert_test!(every(&results, |p| p.brand == "Apple"), "All should be Apple");
     
     // Test: NOT IN with many values
     test_case!("Edge case - NOT IN with many exclusions");
@@ -1385,7 +1381,7 @@ async fn test_edge_cases_and_special_patterns() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| p.category == "Books"),
+        every(&results, |p| p.category == "Books"),
         "Only Books should remain"
     );
     
@@ -1397,7 +1393,7 @@ async fn test_edge_cases_and_special_patterns() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 5);
     assert_test!(
-        results.iter().all(|p| p.price == 29.99),
+        every(&results, |p| p.price == 29.99),
         "All should have price exactly 29.99"
     );
     
@@ -1411,7 +1407,7 @@ async fn test_edge_cases_and_special_patterns() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| p.rating > 4.3 && p.rating < 4.7 && p.rating != 4.5),
+        every(&results, |p| p.rating > 4.3 && p.rating < 4.7 && p.rating != 4.5),
         "All should be in rating window excluding 4.5"
     );
     
@@ -1426,7 +1422,7 @@ async fn test_edge_cases_and_special_patterns() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             (p.description.is_none() && p.active) ||
             (p.discount_percent.is_none() && p.price > 100.0)
         ),
@@ -1496,7 +1492,7 @@ async fn test_edge_cases_and_special_patterns() -> tideorm::Result<()> {
         .await?;
     print_products(&results, 10);
     assert_test!(
-        results.iter().all(|p| 
+        every(&results, |p| 
             p.category != "Electronics" && 
             p.category != "Clothing" && 
             p.active && 
@@ -1711,7 +1707,7 @@ async fn test_reporting_analytics_queries() -> tideorm::Result<()> {
     println!("   {}", "-".repeat(65));
     for p in &dashboard_results {
         println!("   {:<25} {:<12} {:>8.2} {:>6} {:>6.1}", 
-            &p.name[..p.name.len().min(24)], p.category, p.price, p.stock, p.rating);
+            p.name.chars().take(24).collect::<String>(), p.category, p.price, p.stock, p.rating);
     }
     
     Ok(())

@@ -278,32 +278,34 @@ fn pg_headline_examples() {
     
     // Basic headline
     println!("Basic ts_headline:");
-    let basic = pg_headline_sql("content", "search term", "english", "<b>", "</b>");
-    println!("  {}\n", basic);
+    // The expression binds the language, search text and options as $1 to $3.
+    let (basic, params) = pg_headline_sql("content", "search term", "english", "<b>", "</b>");
+    println!("  {}\n  params: {:?}\n", basic, params);
     
     // With different language
     println!("German language:");
-    let german = pg_headline_sql("body", "suchbegriff", "german", "<mark>", "</mark>");
-    println!("  {}\n", german);
+    let (german, params) = pg_headline_sql("body", "suchbegriff", "german", "<mark>", "</mark>");
+    println!("  {}\n  params: {:?}\n", german, params);
     
     // Complex query
     println!("Complex multi-word query:");
-    let complex = pg_headline_sql(
+    let (complex, params) = pg_headline_sql(
         "article_body",
         "rust programming async await tokio",
         "english",
         "<span class=\"highlight\">",
         "</span>"
     );
-    println!("  {}\n", complex);
+    println!("  {}\n  params: {:?}\n", complex, params);
     
     // Using in a full SELECT
     println!("Example in full SELECT query:");
+    let (headline, params) = pg_headline_sql("content", "search query", "english", "<b>", "</b>");
     let query = format!(
         "SELECT id, title, {} AS highlighted_content FROM articles WHERE ...",
-        pg_headline_sql("content", "search query", "english", "<b>", "</b>")
+        headline
     );
-    println!("  {}", query);
+    println!("  {}\n  params: {:?}", query, params);
 }
 
 // =============================================================================

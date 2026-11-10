@@ -122,10 +122,10 @@ async fn main() -> tideorm::Result<()> {
     QueryLogger::clear_history();
     QueryLogger::reset_stats();
     QueryLogger::global()
-        .set_level(LogLevel::Trace)
-        .enable_timing(true)
-        .set_slow_query_threshold_ms(5)
-        .set_history_limit(50)
+        .level(LogLevel::Trace)
+        .timing(true)
+        .slow_query_threshold(std::time::Duration::from_millis(5))
+        .history_limit(50)
         .enable();
 
     let debug_info = Account::query()

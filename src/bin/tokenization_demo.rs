@@ -270,19 +270,15 @@ async fn main() -> tideorm::Result<()> {
     
     // Create tables
     println!("   📋 Setting up tables...");
-    use tideorm::internal::ConnectionTrait;
-    let conn = db().__internal_connection()?;
+    // `exec_raw` runs unprepared, so each script may hold several statements.
+    let conn = db();
     
     // Drop existing tables first (for clean demo runs)
-    conn.execute_unprepared(DROP_TABLES_SQL)
-        .await
-        .map_err(|e| tideorm::Error::query(e.to_string()))?;
+    conn.exec_raw(DROP_TABLES_SQL).await?;
     println!("      Dropped existing tables");
     
     // Create fresh tables
-    conn.execute_unprepared(CREATE_TABLES_SQL)
-        .await
-        .map_err(|e| tideorm::Error::query(e.to_string()))?;
+    conn.exec_raw(CREATE_TABLES_SQL).await?;
     println!("   ✅ Tables created!\n");
     
     // ========================================================================
@@ -461,7 +457,7 @@ async fn main() -> tideorm::Result<()> {
     println!("   Tampered decodes to: {}", if tampered_decode.is_err() { "Error (expected)" } else { "OK" });
     
     assert!(original_decode.is_ok());
-    // tampered_decode already checked above
+    assert!(tampered_token != original_token && tampered_decode.is_err());
     println!("   ✅ Tampered tokens are rejected!");
     println!();
     

@@ -26,12 +26,13 @@
 //!
 //! ## Prerequisites
 //!
-//! Create a `.env` file with your database credentials:
+//! Create a `.env` file with your database credentials. The examples drop and
+//! recreate tables, so point every URL at a throwaway database:
 //!
 //! ```text
 //! POSTGRESQL_DATABASE_URL=postgres://postgres:postgres@localhost:5432/tideorm_examples
 //! MYSQL_DATABASE_URL=mysql://root:@localhost/tideorm_examples
-//! SQLITE_DATABASE_URL=sqlite:./tideorm_examples.db
+//! SQLITE_DATABASE_URL=sqlite:./tideorm_examples.db?mode=rwc
 //! ```
 //!
 //! See the [README](https://github.com/mohamadzoh/tideorm-examples) for more details.
