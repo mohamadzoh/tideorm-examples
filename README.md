@@ -8,7 +8,7 @@ Example applications demonstrating various [TideORM](https://github.com/mohamadz
 
 ## About
 
-This repository contains comprehensive examples showcasing the features and capabilities of TideORM - a developer-friendly ORM for Rust with clean, expressive syntax. These examples are designed to help you learn and understand how to use TideORM effectively in your projects.
+This repository contains comprehensive examples showcasing the features and capabilities of TideORM, an async ActiveRecord ORM for Rust that runs on PostgreSQL, MySQL, MariaDB, SQLite, CockroachDB, YugabyteDB, TiDB and Vitess. These examples are designed to help you learn and understand how to use TideORM effectively in your projects. Coding agents should read [AGENTS.md](AGENTS.md) first.
 
 These examples use the TideORM release that `Cargo.toml` names, and its inline model syntax:
 

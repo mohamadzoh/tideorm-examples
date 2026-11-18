@@ -185,10 +185,10 @@ async fn main() -> tideorm::Result<()> {
 
     println!("=== Aggregations ===\n");
 
-    let count = Note::query().get().await?.len();
+    let count = Note::query().count().await?;
     println!("Total notes: {}", count);
 
-    let user_count = User::query().get().await?.len();
+    let user_count = User::query().count().await?;
     println!("Total users: {}\n", user_count);
 
     // =====================

@@ -179,7 +179,7 @@ async fn main() -> tideorm::Result<()> {
         .await?;
     }
 
-    let count = Product::query().get().await?.len();
+    let count = Product::query().count().await?;
     println!("Total products: {}", count);
 
     // AVG and MAX over no rows are NULL, so they come back as an `Option`.
