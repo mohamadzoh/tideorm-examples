@@ -397,15 +397,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossbeam-queue"
-version = "0.3.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f58bbc28f91df819d0aa2a2c00cd19754769c2fad90579b3592b1c9ba7a3115"
-dependencies = [
- "crossbeam-utils",
-]
-
-[[package]]
 name = "crossbeam-utils"
 version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1521,6 +1512,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_spanned"
+version = "1.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c187e0a369471c550af028cba56d4f4fa2a489ad28151ae95a4d340a2a8b782"
+dependencies = [
+ "serde_core",
+]
+
+[[package]]
 name = "sha1"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1673,13 +1673,15 @@ dependencies = [
 
 [[package]]
 name = "tideorm"
-version = "0.17.2"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55257b658c16f119716722ec4bd36ca4ace1bc45f8ec6ff6a40e9aba4afdf173"
+checksum = "1a20ada621c7500f375c46fbdf9241225c3bef3b68224e3c8c3bc37248f60136"
 dependencies = [
  "argon2",
  "async-io",
+ "async-std",
  "async-trait",
+ "blake2",
  "chacha20poly1305",
  "chrono",
  "futures-util",
@@ -1692,15 +1694,16 @@ dependencies = [
  "thiserror",
  "tideorm-engine",
  "tideorm-macros",
+ "tokio",
  "url",
  "uuid",
 ]
 
 [[package]]
 name = "tideorm-driver"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f13312b91f20c5667fa0e531ccb0d282ce62c578331841cf7e0ff31855be6b8"
+checksum = "b0650e3f56f256a94eb751f79b343e71b7337cf41bf5c8c7a4ddb47f1b7b7db0"
 dependencies = [
  "tideorm-driver-core",
  "tideorm-driver-mysql",
@@ -1710,16 +1713,15 @@ dependencies = [
 
 [[package]]
 name = "tideorm-driver-core"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64b51d135f15e70ee80d1d3af05c8183553503ec56f6fb6457c1fa8e5adfdec3"
+checksum = "72b2468ef661511e08caf3427ef741f77eca23095dadadcc7714df91834c72ac"
 dependencies = [
  "async-io",
  "async-std",
  "bytes",
  "cfg-if",
  "chrono",
- "crossbeam-queue",
  "either",
  "event-listener 5.4.1",
  "futures-core",
@@ -1746,9 +1748,9 @@ dependencies = [
 
 [[package]]
 name = "tideorm-driver-mysql"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5234a5b21e554a5f09c7a11b17c91af8e458f558f04307fd4d840bc712e641e5"
+checksum = "c0e50d91eee6aa43cb46c9a5450fc75b427767f0f542f97d2fe043dd566e6b9d"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -1769,9 +1771,9 @@ dependencies = [
 
 [[package]]
 name = "tideorm-driver-postgres"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bb47c648a170250a77f79e34b8964ba4c17db42f4606c098586500c44d05d4a"
+checksum = "09c7894dc9081f5c7f7b320626e88a43d79e828a592b6d0053951e3b64b1c162"
 dependencies = [
  "atoi",
  "base64",
@@ -1805,9 +1807,9 @@ dependencies = [
 
 [[package]]
 name = "tideorm-driver-sqlite"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3bcd0fde219af182d039e294fe5e4c6a154014bdf80beee67dd566ebac56bfb"
+checksum = "18682d95af3dc30c314a984b4c59e71e31e3863e5d1c69ff1d20058ca83bb996"
 dependencies = [
  "chrono",
  "flume",
@@ -1828,9 +1830,9 @@ dependencies = [
 
 [[package]]
 name = "tideorm-engine"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bbda92154a6e0c2d4a26e9908592a06a4e1ced867d466e4a8573b49c41d29f5"
+checksum = "1e9bcaabe84949c01fab358c2de82b225fe3785ac249e65114c9e121d6079e7e"
 dependencies = [
  "chrono",
  "futures-util",
@@ -1847,7 +1849,7 @@ dependencies = [
 
 [[package]]
 name = "tideorm-examples"
-version = "0.4.6"
+version = "0.5.0"
 dependencies = [
  "chrono",
  "dotenvy",
@@ -1859,22 +1861,23 @@ dependencies = [
 
 [[package]]
 name = "tideorm-macros"
-version = "0.17.2"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "336aedcd422a707c9bfa618e3f5b0c55e48588e7c53b619dbf30a10c7408dd3b"
+checksum = "37ac70d98283fbca9101cad4b01663b01fa356c198fd40710587a06e4f00f8d9"
 dependencies = [
  "darling",
  "proc-macro2",
  "quote",
  "syn 3.0.9",
+ "toml",
  "unicode-segmentation",
 ]
 
 [[package]]
 name = "tideorm-sql-builder"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f70980559f4b6b3a017c5d2b7d181ccd82a45f2dd17e5210f5addb9a844e522f"
+checksum = "77309f7c141cdd61fd91b6d83f07bbb0911e66e574ecdcd347403cbcdd75f968"
 dependencies = [
  "chrono",
  "rust_decimal",
@@ -1885,9 +1888,9 @@ dependencies = [
 
 [[package]]
 name = "tideorm-sql-builder-derive"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fa16036ad9ca56f0991840d267fdd3b7e01add9197ff048d4013525cb060c34"
+checksum = "3e5afbb7872d6d55453cb8e45ce96f074bcca0613a74bcfa7aa37df30f2ebf0b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1922,9 +1925,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.51.0"
+version = "1.54.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bd1c4c0fc4a7ab90fc15ef6daaa3ec3b893f004f915f2392557ed23237820cd"
+checksum = "b52fd3255258d26fac7264ab5a76b53c13367136dc011d3d6ad4f8ed070396a3"
 dependencies = [
  "bytes",
  "libc",
@@ -1949,10 +1952,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml"
+version = "1.2.1+spec-1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5755c51863cdac711f1956baf8eb9588e060755f7d3c4c979e70ea1e1f32cd7"
+dependencies = [
+ "indexmap",
+ "serde_core",
+ "serde_spanned",
+ "toml_datetime 1.1.3+spec-1.1.0",
+ "toml_parser",
+ "toml_writer",
+ "winnow 1.0.5",
+]
+
+[[package]]
 name = "toml_datetime"
 version = "0.7.5+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92e1cfed4a3038bc5a127e35a2d360f145e1f4b971b551a2ba5fd7aedf7e1347"
+dependencies = [
+ "serde_core",
+]
+
+[[package]]
+name = "toml_datetime"
+version = "1.1.3+spec-1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "173f25c883cd2176a2d8212155638c0a60d484a9d84546d270866f40f56b6e49"
 dependencies = [
  "serde_core",
 ]
@@ -1964,19 +1991,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84c8b9f757e028cee9fa244aea147aab2a9ec09d5325a9b01e0a49730c2b5269"
 dependencies = [
  "indexmap",
- "toml_datetime",
+ "toml_datetime 0.7.5+spec-1.1.0",
  "toml_parser",
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
 name = "toml_parser"
-version = "1.0.6+spec-1.1.0"
+version = "1.1.5+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3198b4b0a8e11f09dd03e133c0280504d0801269e9afa46362ffde1cbeebf44"
+checksum = "baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c"
 dependencies = [
- "winnow",
+ "winnow 1.0.5",
 ]
+
+[[package]]
+name = "toml_writer"
+version = "1.2.0+spec-1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "009dbb7700f11c55ef83aebbe4c0e9cf1f1ac0844bd8d6f00dc38f302026e13a"
 
 [[package]]
 name = "tracing"
@@ -2405,6 +2438,12 @@ checksum = "5a5364e9d77fcdeeaa6062ced926ee3381faa2ee02d3eb83a5c27a8825540829"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "winnow"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c3b93199df0ab874cdf0c6a94f0a0dc3423fe41f1cafb62b8bd7b1deb277aef"
 
 [[package]]
 name = "wit-bindgen"
